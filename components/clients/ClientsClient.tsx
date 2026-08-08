@@ -18,8 +18,8 @@ interface Props {
 }
 
 const emptyForm = {
-  name: '', email: '', phone: '', type: 'freela' as const,
-  status: 'ativo' as const, monthly_value: '', notes: '', avatar: ''
+  name: '', email: '', phone: '', type: 'freela' as 'freela' | 'mensal',
+  status: 'ativo' as 'ativo' | 'inativo', monthly_value: '', notes: '', avatar: ''
 }
 
 export default function ClientsClient({ initialClients, workspaceId, isAdmin }: Props) {
