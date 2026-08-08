@@ -143,7 +143,8 @@ export default function ClientsClient({ initialClients, workspaceId, isAdmin }: 
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filter === f.key ? 'bg-accent-purple text-white' : 'bg-bg-hover text-text-secondary hover:text-text-primary'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter === f.key ? 'text-white' : 'text-text-secondary hover:text-text-primary'}`}
+              style={filter === f.key ? { background: 'var(--grad-red)' } : { background: 'var(--bg-hover)' }}
             >
               {f.label}
             </button>
@@ -176,7 +177,7 @@ export default function ClientsClient({ initialClients, workspaceId, isAdmin }: 
                         {c.avatar ? (
                           <img src={c.avatar} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt="" />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-accent-purple/20 flex items-center justify-center text-xs font-bold text-accent-purple flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ background: 'rgba(255,10,51,0.2)' }}>
                             {getInitials(c.name)}
                           </div>
                         )}
@@ -233,7 +234,7 @@ export default function ClientsClient({ initialClients, workspaceId, isAdmin }: 
         <div className="space-y-3">
           {/* Avatar */}
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-accent-purple/20 flex items-center justify-center text-lg font-bold text-accent-purple overflow-hidden flex-shrink-0">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold text-white overflow-hidden flex-shrink-0" style={{ background: 'rgba(255,10,51,0.2)' }}>
               {form.avatar ? <img src={form.avatar} className="w-full h-full object-cover" alt="" /> : getInitials(form.name || '?')}
             </div>
             <div>

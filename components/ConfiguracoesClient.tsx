@@ -59,7 +59,8 @@ export default function ConfiguracoesClient({ profile, members, userId }: Props)
       <div className="flex gap-1.5 mb-6 flex-wrap">
         {tabs.map(({ k, label, icon: Icon }) => (
           <button key={k} onClick={() => setTab(k)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${tab === k ? 'bg-accent-purple text-white' : 'bg-bg-hover text-text-secondary hover:text-text-primary'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === k ? 'text-white' : 'text-text-secondary hover:text-text-primary'}`}
+            style={tab === k ? { background: 'var(--grad-red)', boxShadow: 'var(--glow-red)' } : { background: 'var(--bg-hover)' }}>
             <Icon size={15} />{label}
           </button>
         ))}
