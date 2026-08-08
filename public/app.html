@@ -13201,39 +13201,102 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   // ═══════════════════════════════════════════════════════
-  // API PÚBLICA — Gestão de Colaboradores
-  // Use window._lumem.* no console ou em scripts customizados
+  // HOOK NO PAINEL DE ADMIN — "Adicionar usuário"
+  // Intercepta admConfirmAddUser / admConfirmDeleteUser /
+  // admChangeRole para sincronizar com workspace_members
+  // ═══════════════════════════════════════════════════════
+  window.addEventListener('DOMContentLoaded', function() {
+    // Pequeno delay para garantir que as funções do app já foram definidas
+    setTimeout(function() {
+
+      // ── Adicionar colaborador ──
+      var _origAdd = window.admConfirmAddUser;
+      window.admConfirmAddUser = async function() {
+        var emailEl = document.getElementById('muEmail');
+        var roleEl  = document.getElementById('muRole');
+        var email   = emailEl ? emailEl.value.trim().toLowerCase() : '';
+        var role    = roleEl  ? roleEl.value : 'collab';
+        var sbRole  = (role === 'admin') ? 'admin' : 'colaborador';
+
+        // Chama função original (salva no localStorage)
+        if (_origAdd) await _origAdd();
+
+        // Adiciona no Supabase workspace_members
+        if (email && _sbCurrentUserId) {
+          var { error } = await sb.from('workspace_members').upsert({
+            owner_id:     _sbCurrentUserId,
+            member_email: email,
+            role:         sbRole
+          }, { onConflict: 'owner_id,member_email' });
+
+          if (!error) {
+            // Atualiza mensagem do toast para orientar o colaborador
+            setTimeout(function() {
+              if (typeof admShowToast === 'function') {
+                admShowToast('✅ ' + email + ' adicionado! Peça para ele criar conta no app com esse e-mail.');
+              }
+            }, 500);
+          }
+        }
+      };
+
+      // ── Excluir colaborador ──
+      var _origDel = window.admConfirmDeleteUser;
+      window.admConfirmDeleteUser = async function(idx) {
+        // Pega o email antes de chamar o original (que apaga o usuário)
+        var users = typeof getUsers === 'function' ? getUsers() : [];
+        var u = users[idx];
+        var email = u ? (u.email || '').toLowerCase() : '';
+
+        // Chama função original
+        if (_origDel) await _origDel(idx);
+
+        // Remove do Supabase
+        if (email && _sbCurrentUserId) {
+          await sb.from('workspace_members')
+            .delete()
+            .eq('owner_id', _sbCurrentUserId)
+            .eq('member_email', email);
+        }
+      };
+
+      // ── Alterar nível de acesso ──
+      var _origRole = window.admConfirmChangeRole;
+      if (_origRole) {
+        window.admConfirmChangeRole = async function(idx) {
+          var users = typeof getUsers === 'function' ? getUsers() : [];
+          var u = users[idx];
+          var email = u ? (u.email || '').toLowerCase() : '';
+          var roleEl = document.getElementById('crRole');
+          var newRole = roleEl ? roleEl.value : 'collab';
+          var sbRole = (newRole === 'admin') ? 'admin' : 'colaborador';
+
+          if (_origRole) await _origRole(idx);
+
+          if (email && _sbCurrentUserId) {
+            await sb.from('workspace_members')
+              .update({ role: sbRole })
+              .eq('owner_id', _sbCurrentUserId)
+              .eq('member_email', email);
+          }
+        };
+      }
+
+    }, 800);
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // API PÚBLICA — window._lumem.*
   // ═══════════════════════════════════════════════════════
   window._lumem = {
-    /* Convidar colaborador */
-    convidar: async function(email, role) {
-      if (_sbRole !== 'admin') return { error: 'Apenas administradores podem convidar' };
-      var { error } = await sb.from('workspace_members').upsert({
-        owner_id:     _sbCurrentUserId,
-        member_email: email.toLowerCase().trim(),
-        role:         role || 'colaborador'
-      }, { onConflict: 'owner_id,member_email' });
-      if (!error) console.log('[Lumem] ✅ Colaborador convidado:', email);
-      return { error };
-    },
-    /* Remover colaborador */
-    remover: async function(email) {
-      var { error } = await sb.from('workspace_members')
-        .delete()
-        .eq('owner_id', _sbCurrentUserId)
-        .eq('member_email', email.toLowerCase().trim());
-      return { error };
-    },
-    /* Listar colaboradores */
-    listar: async function() {
-      var { data, error } = await sb.from('workspace_members')
+    papel:   function()      { return _sbRole; },
+    listar:  async function() {
+      var { data } = await sb.from('workspace_members')
         .select('member_email, role, created_at')
         .eq('owner_id', _sbCurrentUserId);
       if (data) console.table(data);
-      return { data, error };
-    },
-    /* Retorna papel do usuário atual */
-    papel: function() { return _sbRole; }
+      return data;
+    }
   };
 
 })();
