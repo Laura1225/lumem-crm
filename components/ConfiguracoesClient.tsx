@@ -75,7 +75,7 @@ export default function ConfiguracoesClient({ profile, members, userId }: Props)
             </div>
             <div>
               <label className="label">E-mail</label>
-              <input className="input" value={profile?.email || ''} disabled className="opacity-50 cursor-not-allowed" />
+              <input className="input opacity-50 cursor-not-allowed" value={profile?.email || ''} disabled />
               <p className="text-text-muted text-xs mt-1">O e-mail não pode ser alterado aqui.</p>
             </div>
             <div>
