@@ -2321,7 +2321,7 @@ html[data-theme="light"] .tp-desc-input:focus { background:rgba(0,0,0,.05); bord
 
 /* Checklist */
 .tp-checklist { display:flex; flex-direction:column; gap:4px; margin-bottom:6px; }
-.tp-check-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:7px; transition:background .12s; group; }
+.tp-check-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:7px; transition:background .12s; }
 .tp-check-item:hover { background:rgba(255,255,255,.05); }
 .tp-check-cb { width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-radius:4px; background:transparent; cursor:pointer; flex-shrink:0; appearance:none; -webkit-appearance:none; transition:.15s; }
 .tp-check-cb:checked { background:#10B981; border-color:#10B981; }
