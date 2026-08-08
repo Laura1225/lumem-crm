@@ -12899,107 +12899,405 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 <!-- ══════════════════════════════════════════════════════════
-     SUPABASE AUTH INTEGRATION — injected
+     SUPABASE — Auth + Real-time Data Sync
+     Substitui Firebase Realtime Database completamente
      ══════════════════════════════════════════════════════════ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 (function(){
-  // SUPABASE CONFIG — replace with your values
   var SUPABASE_URL = '__SUPABASE_URL__';
   var SUPABASE_KEY = '__SUPABASE_ANON_KEY__';
 
   if (!SUPABASE_URL || SUPABASE_URL === '__SUPABASE_URL__') {
-    console.warn('[Lumem] Supabase not configured — running in offline mode');
+    console.warn('[Lumem] Supabase não configurado — modo offline');
     return;
   }
 
-  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    realtime: { params: { eventsPerSecond: 10 } }
+  });
   window._lumemSupabase = sb;
 
-  // ── Override login form ──
-  var loginForm = document.getElementById('loginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', async function(e){
+  // ── Estado do workspace ──
+  var _sbWorkspaceUserId = null;  // ID do dono dos dados (admin)
+  var _sbCurrentUserId   = null;  // ID do usuário logado
+  var _sbRole            = 'admin';
+  var _sbChannel         = null;
+
+  // ═══════════════════════════════════════════════════════
+  // SUBSTITUIÇÃO DO FIREBASE — override das funções globais
+  // O app usa _fbSave / _fbLoadAll / _fbStartListeners.
+  // Aqui redirecionamos tudo para o Supabase.
+  // ═══════════════════════════════════════════════════════
+
+  // Desativa Firebase (já está inicializado mas não queremos usá-lo)
+  window._fbDb  = null;
+  window._fbApp = null;
+
+  // Salva um dado no Supabase (chamado por save() do app original)
+  window._fbSave = async function(logicalKey, value) {
+    if (!_sbWorkspaceUserId) return;
+    try {
+      await sb.from('user_store').upsert({
+        user_id:    _sbWorkspaceUserId,
+        data_key:   logicalKey,
+        value:      value,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,data_key' });
+    } catch(e) { console.warn('[Lumem] Erro ao salvar:', e); }
+  };
+
+  // Inicia escuta em tempo real (Supabase Realtime)
+  window._fbStartListeners = function() {
+    if (!_sbWorkspaceUserId) return;
+    if (_sbChannel) { try { sb.removeChannel(_sbChannel); } catch(e) {} }
+
+    _sbChannel = sb.channel('ws:' + _sbWorkspaceUserId)
+      .on('postgres_changes', {
+        event:  'UPDATE',
+        schema: 'public',
+        table:  'user_store',
+        filter: 'user_id=eq.' + _sbWorkspaceUserId
+      }, function(payload) {
+        var row = payload.new;
+        if (!row) return;
+        var k = row.data_key, v = row.value, changed = false;
+        if (k === 'clients')       { window.clients       = v || []; changed = true; }
+        if (k === 'expenses')      { window.expenses      = v || []; changed = true; }
+        if (k === 'portfolio')     { window.portfolioItems= v || []; changed = true; }
+        if (k === 'proposals')     { window.proposals     = v || []; changed = true; }
+        if (k === 'briefings')     { window.briefings     = v || []; changed = true; }
+        if (k === 'contracts')     { window.contracts     = v || []; changed = true; }
+        if (k === 'settings')      { window.settings      = v || { monthlyGoal: 0 }; changed = true; }
+        if (k === 'team')          { window.teamAccounts  = v || []; changed = true; }
+        if (k === 'leads')         { window.leads         = v || []; changed = true; }
+        if (k === 'archive')       { window.archive       = v || []; changed = true; }
+        if (k === 'history')       { window.activityLog   = v || []; changed = true; }
+        if (k === 'folders')       { window.clientFolders = v || []; changed = true; }
+        if (k === 'demandTasks') {
+          try { localStorage.setItem('lumem:tasks', JSON.stringify(v)); } catch(e) {}
+          if (typeof window.loadDemandTasks === 'function') window.loadDemandTasks();
+          changed = true;
+        }
+        if (k === 'demandColumns') {
+          try { localStorage.setItem('lumem:columns', JSON.stringify(v)); } catch(e) {}
+          if (typeof window.loadDemandColumns === 'function') window.loadDemandColumns();
+          changed = true;
+        }
+        if (changed) {
+          try { renderEverything(); } catch(ex) {}
+          try { _fbShowSyncBadge(); } catch(ex) {}
+        }
+      })
+      .subscribe();
+  };
+
+  window._fbStopListeners = function() {
+    if (_sbChannel) {
+      try { sb.removeChannel(_sbChannel); } catch(e) {}
+      _sbChannel = null;
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════
+  // CARREGAR DADOS DO SUPABASE → localStorage → loadAll()
+  // ═══════════════════════════════════════════════════════
+  async function _sbPopulateLocalStorage() {
+    if (!_sbWorkspaceUserId || !window.KEYS) return;
+    try {
+      var { data } = await sb.from('user_store')
+        .select('data_key, value')
+        .eq('user_id', _sbWorkspaceUserId);
+      if (!data || data.length === 0) return;
+
+      var keyMap = {
+        'clients':      window.KEYS.clients,
+        'expenses':     window.KEYS.expenses,
+        'portfolio':    window.KEYS.portfolio,
+        'proposals':    window.KEYS.proposals,
+        'briefings':    window.KEYS.briefings,
+        'contracts':    window.KEYS.contracts,
+        'settings':     window.KEYS.settings,
+        'auth':         window.KEYS.auth,
+        'team':         window.KEYS.team,
+        'leads':        window.KEYS.leads,
+        'avatar':       window.KEYS.avatar,
+        'archive':      window.KEYS.archive,
+        'history':      window.KEYS.history,
+        'folders':      window.KEYS.folders,
+        'theme':        window.KEYS.theme,
+        'demandTasks':  'lumem:tasks',
+        'demandColumns':'lumem:columns'
+      };
+
+      data.forEach(function(row) {
+        var lsKey = keyMap[row.data_key];
+        if (lsKey && row.value !== null && row.value !== undefined) {
+          try { localStorage.setItem(lsKey, JSON.stringify(row.value)); } catch(e) {}
+        }
+      });
+    } catch(e) { console.warn('[Lumem] Erro ao carregar dados:', e); }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // HOOKS DE FORMULÁRIO
+  // ═══════════════════════════════════════════════════════
+  function _hookLoginForm() {
+    var loginForm = document.getElementById('loginForm');
+    if (!loginForm || loginForm._sbHooked) return;
+    loginForm._sbHooked = true;
+    loginForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      var email = document.getElementById('loginUser').value.trim();
-      var password = document.getElementById('loginPass').value;
-      var errEl = document.getElementById('loginError');
-      var btn = document.getElementById('loginSubmitBtn');
+      e.stopImmediatePropagation();
+      var email    = (document.getElementById('loginUser') || {}).value || '';
+      var password = (document.getElementById('loginPass') || {}).value || '';
+      var errEl    = document.getElementById('loginError');
+      var btn      = document.getElementById('loginSubmitBtn');
       if (btn) btn.textContent = 'Entrando...';
-      var { data, error } = await sb.auth.signInWithPassword({ email, password });
+      var { data, error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
       if (error) {
         if (errEl) errEl.textContent = 'E-mail ou senha incorretos.';
-        if (btn) { btn.innerHTML = 'Entrar <span class="btn-neon-arrow">&#8594;</span>'; }
+        if (btn) btn.innerHTML = 'Entrar <span class="btn-neon-arrow">&#8594;</span>';
         return;
       }
-      // Success — load app
-      _lumemHandleSession(data.session);
+      await _lumemHandleSession(data.session);
     }, true);
   }
 
-  // ── Override signup ──
-  var signupForm = document.getElementById('signupForm');
-  if (signupForm) {
-    signupForm.addEventListener('submit', async function(e){
+  function _hookSignupForm() {
+    var signupForm = document.getElementById('signupForm');
+    if (!signupForm || signupForm._sbHooked) return;
+    signupForm._sbHooked = true;
+    signupForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      var name = document.getElementById('signupName') ? document.getElementById('signupName').value.trim() : '';
-      var email = document.getElementById('signupEmail') ? document.getElementById('signupEmail').value.trim() : 
-                  document.getElementById('loginUser').value.trim();
-      var password = document.getElementById('signupPass') ? document.getElementById('signupPass').value :
-                    document.getElementById('loginPass').value;
-      var errEl = document.getElementById('signupError') || document.getElementById('loginError');
-      var { data, error } = await sb.auth.signUp({ email, password, options: { data: { name: name } } });
+      e.stopImmediatePropagation();
+      var nameEl  = document.getElementById('signupName');
+      var emailEl = document.getElementById('signupEmail') || document.getElementById('loginUser');
+      var passEl  = document.getElementById('signupPass')  || document.getElementById('loginPass');
+      var errEl   = document.getElementById('signupError') || document.getElementById('loginError');
+      var name     = nameEl  ? nameEl.value.trim()  : '';
+      var email    = emailEl ? emailEl.value.trim()  : '';
+      var password = passEl  ? passEl.value          : '';
+      var { error } = await sb.auth.signUp({
+        email, password,
+        options: { data: { name: name } }
+      });
       if (error) { if (errEl) errEl.textContent = error.message; return; }
-      if (errEl) errEl.textContent = '✅ Conta criada! Verifique seu e-mail.';
+      if (errEl) errEl.textContent = '✅ Conta criada! Faça login agora.';
     }, true);
   }
 
-  // ── Override logout ──
-  function _hookLogout(){
-    var logoutBtns = document.querySelectorAll('#btnLogout, .logout-btn');
-    logoutBtns.forEach(function(btn){
-      btn.addEventListener('click', async function(e){
+  function _hookLogout() {
+    document.querySelectorAll('#btnLogout, .logout-btn').forEach(function(btn) {
+      if (btn._sbLogoutHooked) return;
+      btn._sbLogoutHooked = true;
+      btn.addEventListener('click', async function(e) {
         e.stopImmediatePropagation();
+        window._fbStopListeners();
         await sb.auth.signOut();
+        _sbWorkspaceUserId = null;
+        _sbCurrentUserId   = null;
         window.location.reload();
       }, true);
     });
   }
 
-  // ── Handle session ──
-  async function _lumemHandleSession(session){
+  // ═══════════════════════════════════════════════════════
+  // HANDLER PRINCIPAL DE SESSÃO
+  // ═══════════════════════════════════════════════════════
+  var _sessionHandled = false;
+
+  async function _lumemHandleSession(session) {
     if (!session) {
-      // Show login
-      document.getElementById('screenLogin').style.display = 'flex';
-      document.getElementById('app').style.display = 'none';
+      _sessionHandled = false;
+      var sL = document.getElementById('screenLogin');
+      var aE = document.getElementById('app');
+      if (sL) sL.style.display = 'flex';
+      if (aE) aE.style.display = 'none';
       return;
     }
-    // Hide login, show app
-    document.getElementById('screenLogin').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    // Update user info in sidebar
+
+    // Evita dupla inicialização na mesma sessão
+    if (_sessionHandled && _sbCurrentUserId === session.user.id) return;
+    _sessionHandled    = true;
+    _sbCurrentUserId   = session.user.id;
+
     var user = session.user;
     var name = (user.user_metadata && user.user_metadata.name) || user.email.split('@')[0];
+
+    // ── Verificar se é colaborador ──
+    var { data: membership } = await sb
+      .from('workspace_members')
+      .select('owner_id, role')
+      .eq('member_id', user.id)
+      .maybeSingle();
+
+    if (membership && membership.owner_id) {
+      _sbWorkspaceUserId = membership.owner_id;
+      _sbRole            = membership.role || 'colaborador';
+    } else {
+      _sbWorkspaceUserId = user.id;
+      _sbRole            = 'admin';
+    }
+    window._lumemRole = _sbRole;
+
+    // ── Preparar estado do app legado ──
+    window.currentUser   = user.email;
+    window._fbUserEmail  = user.email;
+    if (typeof makeUserKeys === 'function') {
+      window.KEYS = makeUserKeys(user.email);
+    }
+
+    // ── Carregar dados do Supabase → localStorage ──
+    await _sbPopulateLocalStorage();
+
+    // ── Mostrar app ──
+    var screenLogin = document.getElementById('screenLogin');
+    var appEl       = document.getElementById('app');
+    if (screenLogin) screenLogin.style.display = 'none';
+    if (appEl)       appEl.style.display       = 'flex';
+
+    // ── Atualizar UI com nome do usuário ──
     var initEl = document.getElementById('avatarInitials');
-    if (initEl) initEl.textContent = name.slice(0,2).toUpperCase();
-    var lcNameEls = document.querySelectorAll('.lc-name');
-    lcNameEls.forEach(function(el){ el.textContent = name; });
+    if (initEl) initEl.textContent = name.slice(0, 2).toUpperCase();
+    document.querySelectorAll('.lc-name').forEach(function(el) { el.textContent = name; });
+
+    // ── Hook nos botões de logout ──
     _hookLogout();
-    // Trigger dashboard load if function exists
-    if (typeof navigateTo === 'function') navigateTo('dashboard');
-    else if (typeof showSection === 'function') showSection('dashboard');
+
+    // ── Chamar loadAll() original (lê do localStorage pré-populado) ──
+    if (typeof loadAll === 'function') {
+      try { await loadAll(); } catch(e) { console.warn('[Lumem] loadAll error:', e); }
+    }
+
+    // ── Iniciar sync em tempo real ──
+    window._fbStartListeners();
+
+    // ── Navegar para o dashboard ──
+    setTimeout(function() {
+      try {
+        if (typeof navigateTo === 'function') navigateTo('dashboard');
+        else if (typeof showSection === 'function') showSection('dashboard');
+        else if (typeof renderEverything === 'function') renderEverything();
+      } catch(e) {}
+    }, 150);
   }
 
-  // ── Check session on load ──
-  window.addEventListener('DOMContentLoaded', async function(){
+  // ═══════════════════════════════════════════════════════
+  // INICIALIZAÇÃO NO DOMCONTENTLOADED
+  // ═══════════════════════════════════════════════════════
+  window.addEventListener('DOMContentLoaded', async function() {
+    _hookLoginForm();
+    _hookSignupForm();
+    _hookLogout();
+
     var { data: { session } } = await sb.auth.getSession();
-    _lumemHandleSession(session);
-    
-    // Listen for auth changes
-    sb.auth.onAuthStateChange(function(event, session){
-      _lumemHandleSession(session);
+    await _lumemHandleSession(session);
+
+    sb.auth.onAuthStateChange(async function(event, session) {
+      if (event === 'SIGNED_IN')  await _lumemHandleSession(session);
+      if (event === 'SIGNED_OUT') await _lumemHandleSession(null);
     });
   });
+
+  // ═══════════════════════════════════════════════════════
+  // HOOK NO PAINEL DE ADMIN — "Adicionar usuário"
+  // Intercepta admConfirmAddUser / admConfirmDeleteUser /
+  // admChangeRole para sincronizar com workspace_members
+  // ═══════════════════════════════════════════════════════
+  window.addEventListener('DOMContentLoaded', function() {
+    // Pequeno delay para garantir que as funções do app já foram definidas
+    setTimeout(function() {
+
+      // ── Adicionar colaborador ──
+      var _origAdd = window.admConfirmAddUser;
+      window.admConfirmAddUser = async function() {
+        var emailEl = document.getElementById('muEmail');
+        var roleEl  = document.getElementById('muRole');
+        var email   = emailEl ? emailEl.value.trim().toLowerCase() : '';
+        var role    = roleEl  ? roleEl.value : 'collab';
+        var sbRole  = (role === 'admin') ? 'admin' : 'colaborador';
+
+        // Chama função original (salva no localStorage)
+        if (_origAdd) await _origAdd();
+
+        // Adiciona no Supabase workspace_members
+        if (email && _sbCurrentUserId) {
+          var { error } = await sb.from('workspace_members').upsert({
+            owner_id:     _sbCurrentUserId,
+            member_email: email,
+            role:         sbRole
+          }, { onConflict: 'owner_id,member_email' });
+
+          if (!error) {
+            // Atualiza mensagem do toast para orientar o colaborador
+            setTimeout(function() {
+              if (typeof admShowToast === 'function') {
+                admShowToast('✅ ' + email + ' adicionado! Peça para ele criar conta no app com esse e-mail.');
+              }
+            }, 500);
+          }
+        }
+      };
+
+      // ── Excluir colaborador ──
+      var _origDel = window.admConfirmDeleteUser;
+      window.admConfirmDeleteUser = async function(idx) {
+        // Pega o email antes de chamar o original (que apaga o usuário)
+        var users = typeof getUsers === 'function' ? getUsers() : [];
+        var u = users[idx];
+        var email = u ? (u.email || '').toLowerCase() : '';
+
+        // Chama função original
+        if (_origDel) await _origDel(idx);
+
+        // Remove do Supabase
+        if (email && _sbCurrentUserId) {
+          await sb.from('workspace_members')
+            .delete()
+            .eq('owner_id', _sbCurrentUserId)
+            .eq('member_email', email);
+        }
+      };
+
+      // ── Alterar nível de acesso ──
+      var _origRole = window.admConfirmChangeRole;
+      if (_origRole) {
+        window.admConfirmChangeRole = async function(idx) {
+          var users = typeof getUsers === 'function' ? getUsers() : [];
+          var u = users[idx];
+          var email = u ? (u.email || '').toLowerCase() : '';
+          var roleEl = document.getElementById('crRole');
+          var newRole = roleEl ? roleEl.value : 'collab';
+          var sbRole = (newRole === 'admin') ? 'admin' : 'colaborador';
+
+          if (_origRole) await _origRole(idx);
+
+          if (email && _sbCurrentUserId) {
+            await sb.from('workspace_members')
+              .update({ role: sbRole })
+              .eq('owner_id', _sbCurrentUserId)
+              .eq('member_email', email);
+          }
+        };
+      }
+
+    }, 800);
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // API PÚBLICA — window._lumem.*
+  // ═══════════════════════════════════════════════════════
+  window._lumem = {
+    papel:   function()      { return _sbRole; },
+    listar:  async function() {
+      var { data } = await sb.from('workspace_members')
+        .select('member_email, role, created_at')
+        .eq('owner_id', _sbCurrentUserId);
+      if (data) console.table(data);
+      return data;
+    }
+  };
 
 })();
 </script>
