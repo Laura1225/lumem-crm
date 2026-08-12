@@ -3884,7 +3884,8 @@ window._openLinkInApp = function(url){
 async function loadAll(){
   /* ── Pull from cloud (Supabase) first — has freshest data ── */
   if(window._sb && _sbUserId){
-    var _cloud = await _fbLoadAll();
+    /* timeout de 8s para não travar se Supabase demorar */
+    var _cloud = await Promise.race([_fbLoadAll(), new Promise(function(r){ setTimeout(function(){ r(null); }, 8000); })]);
     if(_cloud){
       var _ck = function(cloudKey, lsKey){
         if(_cloud[cloudKey] !== undefined){
@@ -6136,40 +6137,42 @@ async function _enterDashboard(email, role, fromAutoRestore){
   /* ── Set email-based cloud identity so sync paths work ── */
   _fbUserEmail = email;
   /* ── Load this user's own data (isolated namespace) ── */
-  migrateToUserNamespace(email);   /* one-time: copy legacy data for Laura */
-  KEYS = makeUserKeys(email);      /* all future reads/writes use this user's prefix */
-  await loadAll();                 /* reload everything from user-specific keys (cloud first) */
-  _fbStartListeners(); /* start real-time cross-device sync */
-  if(!fromAutoRestore) logActivity('🔐', 'sistema', 'Login realizado', email);
+  try{ migrateToUserNamespace(email); }catch(ex){}
+  try{ KEYS = makeUserKeys(email); }catch(ex){ if(!KEYS) KEYS = makeUserKeys('default'); }
+  try{ await loadAll(); }catch(ex){}  /* reload everything from user-specific keys (cloud first) */
+  try{ _fbStartListeners(); }catch(ex){} /* start real-time cross-device sync */
+  try{ if(!fromAutoRestore) logActivity('🔐', 'sistema', 'Login realizado', email); }catch(ex){}
   /* Clear password field — browsers interpret this as "login succeeded, save credentials" */
-  var passField = document.getElementById('loginPass');
-  if(passField) passField.value = '';
-  document.getElementById('screenLogin').style.display = 'none';
-  document.getElementById('app').classList.add('visible');
-  applyRoleRestrictions(role);
-  syncFoldersWithClients();
-  renderEverything();
-  prefillSettingsForm();
+  try{ var passField = document.getElementById('loginPass'); if(passField) passField.value = ''; }catch(ex){}
+  /* ── GARANTIA: sempre esconde login e mostra app ── */
+  try{ document.getElementById('screenLogin').style.display = 'none'; }catch(ex){}
+  try{ document.getElementById('app').classList.add('visible'); }catch(ex){}
+  try{ applyRoleRestrictions(role); }catch(ex){}
+  try{ syncFoldersWithClients(); }catch(ex){}
+  try{ renderEverything(); }catch(ex){}
+  try{ prefillSettingsForm(); }catch(ex){}
   /* Load saved EmailJS config so OTP works from first login */
   try{
     var _ejsCfg = JSON.parse(localStorage.getItem('lumem:emailjsCfg')||'{}');
     if(_ejsCfg.svc) window.LUMEM_EMAILJS_SVC = _ejsCfg.svc;
     if(_ejsCfg.tpl) window.LUMEM_EMAILJS_TPL = _ejsCfg.tpl;
-    if(_ejsCfg.key && window.emailjs){ try{ window.emailjs.init(_ejsCfg.key); }catch(ex){} }
+    if(_ejsCfg.key && window.emailjs){ try{ window.emailjs.init(_ejsCfg.key); }catch(ex2){} }
   }catch(ex){}
   /* Sempre abre no Dashboard ao fazer login — tanto admin quanto colaborador */
-  navigateTo('dashboard');
-  requestAnimationFrame(()=>{ if(window.initParticles) window.initParticles(); });
+  try{ navigateTo('dashboard'); }catch(ex){}
+  try{ requestAnimationFrame(()=>{ if(window.initParticles) window.initParticles(); }); }catch(ex){}
   /* Request browser notification permission */
   try{ if(typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission(); }catch(e){}
   /* Initialize notification bell */
-  refreshNotifBell();
+  try{ refreshNotifBell(); }catch(ex){}
   /* Auto-refresh collab dashboard every 60s */
   if(role !== 'admin'){
     if(window._collabDashInterval) clearInterval(window._collabDashInterval);
     window._collabDashInterval = setInterval(function(){
-      var sec = document.getElementById('section-dashboard');
-      if(sec && sec.classList.contains('active')) renderCollabDashboard(); /* role já é não-admin — guard redundante removido */
+      try{
+        var sec = document.getElementById('section-dashboard');
+        if(sec && sec.classList.contains('active')) renderCollabDashboard();
+      }catch(ex){}
     }, 60000);
   }
 }
@@ -6308,10 +6311,23 @@ document.getElementById('loginForm').addEventListener('submit', async (e)=>{
 
   try{
     var _latestUsers = _getAdmUsers();
-    if(_latestUsers.length) await _pushAdmUsersToCloud(_latestUsers);
+    if(_latestUsers.length){
+      /* timeout de 5s para não travar o login se Supabase estiver lento */
+      await Promise.race([
+        _pushAdmUsersToCloud(_latestUsers),
+        new Promise(function(r){ setTimeout(r, 5000); })
+      ]);
+    }
   }catch(_pe){}
 
-  await _enterDashboard(authEmail, authRole);
+  try{
+    await _enterDashboard(authEmail, authRole);
+  }catch(ex){
+    /* Garante que o dashboard aparece mesmo se algum render der erro */
+    try{ document.getElementById('screenLogin').style.display = 'none'; }catch(e){}
+    try{ document.getElementById('app').classList.add('visible'); }catch(e){}
+    try{ navigateTo('dashboard'); }catch(e){}
+  }
 });
 document.getElementById('btnLogout').addEventListener('click', ()=>{
   /* log logout */
