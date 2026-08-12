@@ -6251,7 +6251,37 @@ document.getElementById('loginForm').addEventListener('submit', async (e)=>{
 
   let authEmail = null, authRole = null;
   let admUsers = _getAdmUsers();
-  if(admUsers.length > 0){
+
+  /* ── Tenta autenticar via Supabase primeiro ──
+        Se o e-mail/senha batem no Supabase, entra direto (sincroniza local depois). */
+  var _sbLoginOk = false;
+  if(window._sb){
+    try{
+      var { data: _sbD, error: _sbE } = await window._sb.auth.signInWithPassword({ email: email, password: pass });
+      if(!_sbE && _sbD && _sbD.session){
+        _sbLoginOk = true;
+        _sbUserId = _sbD.session.user.id; _fbUid = _sbUserId;
+      }
+    }catch(_){}
+  }
+
+  if(_sbLoginOk){
+    /* Supabase autenticou — descobre o role pelo e-mail */
+    var _sbRole = 'edit';
+    if(email === ADMIN_EMAIL.toLowerCase()) _sbRole = 'admin';
+    else {
+      var _sbUser = admUsers.find(function(u){ return (u.email||'').toLowerCase() === email; });
+      if(_sbUser) _sbRole = _sbUser.role || 'edit';
+    }
+    /* Sincroniza hash local pra próximas logins offline */
+    var _sbHash = await _sha256(pass + ':lumem');
+    var _sbIdx = admUsers.findIndex(function(u){ return (u.email||'').toLowerCase() === email; });
+    if(_sbIdx >= 0){ admUsers[_sbIdx].passwordHash = _sbHash; }
+    else { admUsers.push({ email: email, passwordHash: _sbHash, role: _sbRole, active: true, createdAt: Date.now() }); }
+    try{ localStorage.setItem('lumem:adm:users', JSON.stringify(admUsers)); }catch(e){}
+    authEmail = email; authRole = _sbRole;
+  } else if(admUsers.length > 0){
+    /* Supabase falhou ou indisponível — tenta hash local (funciona offline) */
     const hash = await _sha256(pass + ':lumem');
     const user = admUsers.find(u => u.email.toLowerCase() === email && u.passwordHash === hash && u.active);
     if(user){ authEmail = user.email; authRole = user.role; }
@@ -6262,26 +6292,19 @@ document.getElementById('loginForm').addEventListener('submit', async (e)=>{
       } else if(emailExists && !emailExists.active){
         errEl.textContent = 'Conta desativada. Fale com o administrador.';
       } else {
-        errEl.textContent = 'Senha incorreta. Tente novamente.';
+        errEl.textContent = 'Senha incorreta.';
       }
       return;
     }
   } else {
-    const teamMatch = teamAccounts.find(t => (t.username||'').toLowerCase() === email && t.password === pass);
-    if(email === (authData.username||'').toLowerCase() && pass === authData.password){
-      authEmail = email; authRole = 'admin';
-    } else if(teamMatch){
-      authEmail = teamMatch.username; authRole = 'edit';
-    } else {
-      errEl.textContent = 'E-mail ou senha incorretos.'; return;
-    }
+    errEl.textContent = 'E-mail ou senha incorretos.'; return;
   }
 
   _saveCredential(authEmail, pass);
   await new Promise(function(r){ setTimeout(r, 80); });
 
-  /* Sign into Supabase for cross-device sync */
-  await _fbSignIn(authEmail, pass);
+  /* Sign into Supabase for cross-device sync (pula se já autenticou acima) */
+  if(!_sbLoginOk) await _fbSignIn(authEmail, pass);
 
   try{
     var _latestUsers = _getAdmUsers();
