@@ -2093,10 +2093,11 @@ html[data-theme="light"] .cal-no-date-title { color:var(--text-dimmer); }
 .cal-no-date-chip:hover { filter:brightness(1.15); }
 
 /* ========== KANBAN / DEMANDAS ========== */
-#section-demandas { display:none; flex-direction:column; height:100%; }
+#section-demandas { display:none; flex-direction:column; }
 #section-demandas.active { display:flex; }
 .kanban-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-shrink:0; }
-.kanban-board { display:flex; flex-direction:row; gap:12px; overflow-x:auto; overflow-y:hidden; padding-bottom:20px; flex:1; min-height:0; }
+.kanban-board { display:flex; flex-direction:row; align-items:flex-start; gap:12px; overflow-x:auto; padding-bottom:20px; cursor:grab; user-select:none; }
+.kanban-board.is-dragging { cursor:grabbing; }
 .kanban-board::-webkit-scrollbar { height:6px; }
 .kanban-board::-webkit-scrollbar-track { background:transparent; }
 .kanban-board::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
@@ -2105,15 +2106,15 @@ html[data-theme="light"] .cal-no-date-title { color:var(--text-dimmer); }
 .kanban-col-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 .kanban-col-name { font-size:11px; font-weight:700; letter-spacing:.7px; text-transform:uppercase; color:var(--text); flex:1; }
 .kanban-col-count { font-size:11px; color:var(--text-dim); background:rgba(255,255,255,0.07); border-radius:10px; padding:1px 7px; }
-.kanban-cards { flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:8px; min-height:60px; }
+.kanban-cards { padding:8px; display:flex; flex-direction:column; gap:8px; min-height:60px; cursor:default; }
 .kanban-cards::-webkit-scrollbar { width:4px; }
 .kanban-cards::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 .kanban-col.drag-over { outline:2px dashed var(--accent,#FF0A33); outline-offset:-2px; background:rgba(255,255,255,0.06); }
-.k-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:0; cursor:pointer; user-select:none; transition:box-shadow .15s, transform .15s; overflow:hidden; }
+.k-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:0; cursor:grab; user-select:none; transition:box-shadow .15s, transform .15s; overflow:hidden; }
 .k-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.18); transform:translateY(-1px); }
 .k-card.dragging { opacity:.5; }
-.k-card { user-select:none; -webkit-user-select:none; cursor:grab; }
 .k-card:active { cursor:grabbing; }
+.kanban-col-head, .kanban-col-head button, .k-card button, .k-card a { cursor:pointer; }
 .k-card .k-card-inner * { pointer-events:none; }
 .k-card .k-drive-link { pointer-events:auto; }
 .k-card .k-card-quick { pointer-events:auto; }
@@ -2787,11 +2788,54 @@ html[data-theme="light"] .pasta-modal { background:#fff; }
 html[data-theme="light"] .pastas-search { background:#fff; }
 html[data-theme="light"] .pasta-proj-item:hover { background:#f0ece8; }
 
-.scroll-time-picker { display:flex; gap:4px; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:4px 8px; user-select:none; }
-.scroll-time-col { display:flex; flex-direction:column; align-items:center; gap:2px; }
-.scroll-time-val { font-size:20px; font-weight:700; color:var(--text); width:36px; text-align:center; cursor:pointer; }
-.scroll-time-btn { font-size:16px; color:var(--text-dim); cursor:pointer; line-height:1; padding:2px 6px; border-radius:4px; }
-.scroll-time-btn:hover { background:var(--hover); }
+/* native time input — same visual as date input */
+input[type="time"] { background:var(--card-2,rgba(255,255,255,.04)); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-family:'Manrope',sans-serif; font-size:14px; font-weight:600; outline:none; width:100%; box-sizing:border-box; cursor:pointer; }
+input[type="time"]:focus { border-color:var(--pink,#FF0A33); box-shadow:0 0 0 2px rgba(255,10,51,.12); }
+input[type="time"]::-webkit-calendar-picker-indicator { filter:invert(.6); cursor:pointer; }
+
+/* ══ CHAT ══════════════════════════════════════════════════ */
+#section-chat { display:none; flex-direction:column; height:100%; }
+#section-chat.active { display:flex; }
+.chat-layout { display:flex; gap:0; height:100%; min-height:0; border-radius:16px; overflow:hidden; background:var(--card); border:1px solid var(--border); }
+.chat-sidebar { width:220px; flex-shrink:0; border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); }
+.chat-sidebar-hdr { padding:16px 14px 10px; font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--border); }
+.chat-conv-list { flex:1; overflow-y:auto; }
+.chat-conv-item { display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; border-bottom:1px solid var(--border); transition:.15s; }
+.chat-conv-item:hover { background:var(--hover); }
+.chat-conv-item.active { background:rgba(255,84,112,.08); border-left:3px solid var(--pink); }
+.chat-conv-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#FF5470,#FF0A33); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; flex-shrink:0; position:relative; }
+.chat-conv-online { position:absolute; bottom:0; right:0; width:9px; height:9px; border-radius:50%; background:#22c55e; border:2px solid var(--surface); }
+.chat-conv-info { flex:1; min-width:0; }
+.chat-conv-name { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-conv-preview { font-size:11px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+.chat-conv-badge { min-width:18px; height:18px; border-radius:9px; background:var(--pink); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 4px; flex-shrink:0; }
+.chat-main { flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; }
+.chat-header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+.chat-header-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#FF5470,#FF0A33); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; flex-shrink:0; }
+.chat-header-name { font-size:14px; font-weight:700; color:var(--text); }
+.chat-header-status { font-size:11px; color:var(--text-dim); margin-top:1px; }
+.chat-messages { flex:1; overflow-y:auto; padding:16px 18px; display:flex; flex-direction:column; gap:10px; }
+.chat-msg { display:flex; flex-direction:column; max-width:75%; }
+.chat-msg.sent { align-self:flex-end; align-items:flex-end; }
+.chat-msg.recv { align-self:flex-start; align-items:flex-start; }
+.chat-bubble { padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.5; word-break:break-word; }
+.chat-msg.sent .chat-bubble { background:linear-gradient(135deg,#FF5470,#FF0A33); color:#fff; border-bottom-right-radius:4px; }
+.chat-msg.recv .chat-bubble { background:var(--surface); border:1px solid var(--border); color:var(--text); border-bottom-left-radius:4px; }
+.chat-bubble .chat-mention { font-weight:700; opacity:.85; }
+.chat-msg-meta { font-size:10px; color:var(--text-dim); margin-top:3px; }
+.chat-msg-sender { font-size:11px; font-weight:600; color:var(--text-muted); margin-bottom:3px; }
+.chat-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:var(--text-dim); }
+.chat-empty-icon { font-size:36px; }
+.chat-empty-msg { font-size:13px; text-align:center; }
+.chat-input-area { padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:flex-end; }
+.chat-input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:9px 14px; font-size:13px; color:var(--text); resize:none; outline:none; max-height:100px; line-height:1.4; font-family:inherit; transition:.15s; }
+.chat-input:focus { border-color:var(--pink); box-shadow:0 0 0 2px rgba(255,84,112,.15); }
+.chat-send-btn { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#FF5470,#FF0A33); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.15s; }
+.chat-send-btn:hover { transform:scale(1.08); box-shadow:0 2px 10px rgba(255,84,112,.4); }
+.chat-send-btn:disabled { opacity:.4; cursor:default; transform:none; }
+.chat-select-prompt { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--text-dim); }
+.chat-select-icon { font-size:40px; }
+.chat-nav-badge { min-width:16px; height:16px; border-radius:8px; background:var(--pink); color:#fff; font-size:9px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; padding:0 4px; margin-left:auto; }
 
 </style>
 <!-- Supabase SDK -->
@@ -2925,6 +2969,9 @@ html[data-theme="light"] .pasta-proj-item:hover { background:#f0ece8; }
       <div class="nav-item" data-section="contratos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M9 17l2 2 4-4"/></svg>
         <span>Contratos</span></div>
+      <div class="nav-item" data-section="chat" id="navChat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Chat</span><span class="chat-nav-badge" id="chatNavBadge" style="display:none">0</span></div>
       <div class="nav-item" data-section="configuracoes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V21a2 2 0 11-4 0v-.09A1.7 1.7 0 009 19.4a1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.55-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.55V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.55 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019.4 9a1.7 1.7 0 001.55 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.51 1z"/></svg>
         <span>Configurações</span></div>
@@ -3350,6 +3397,42 @@ html[data-theme="light"] .pasta-proj-item:hover { background:#f0ece8; }
         <div class="card-label">Arquivados</div>
         <p style="font-size:12.5px; color:var(--text-dim); margin:0 0 14px;">Itens removidos ficam arquivados aqui. Você pode restaurá-los quando quiser.</p>
         <div id="archiveList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="section" id="section-chat">
+      <div class="chat-layout" style="flex:1;min-height:0;">
+        <!-- Admin: sidebar with collaborator list -->
+        <div class="chat-sidebar" id="chatSidebarAdmin" style="display:none;">
+          <div class="chat-sidebar-hdr">Conversas</div>
+          <div class="chat-conv-list" id="chatConvList"></div>
+        </div>
+        <!-- Chat main area -->
+        <div class="chat-main" id="chatMain">
+          <!-- Prompt to select a conversation (admin only, before selecting) -->
+          <div class="chat-select-prompt" id="chatSelectPrompt" style="display:none;">
+            <div class="chat-select-icon">💬</div>
+            <div style="font-size:13px;color:var(--text-dim);text-align:center;">Selecione um colaborador para iniciar o chat</div>
+          </div>
+          <!-- Active conversation -->
+          <div id="chatConvArea" style="display:none;flex:1;flex-direction:column;min-height:0;">
+            <div class="chat-header" id="chatHeader">
+              <div class="chat-header-avatar" id="chatHeaderAvatar">?</div>
+              <div>
+                <div class="chat-header-name" id="chatHeaderName">—</div>
+                <div class="chat-header-status" id="chatHeaderStatus">Chat ao vivo</div>
+              </div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-area">
+              <textarea class="chat-input" id="chatInput" placeholder="Digite sua mensagem... use @nome para mencionar" rows="1"></textarea>
+              <button class="chat-send-btn" id="chatSendBtn" title="Enviar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -3799,8 +3882,8 @@ window._openLinkInApp = function(url){
 
 /* ================= STORAGE ================= */
 async function loadAll(){
-  /* ── Pull from Firebase first (cloud has freshest data) ── */
-  if(_fbDb && _fbUid){
+  /* ── Pull from cloud (Supabase) first — has freshest data ── */
+  if(window._sb && _sbUserId){
     var _cloud = await _fbLoadAll();
     if(_cloud){
       var _ck = function(cloudKey, lsKey){
@@ -3851,6 +3934,17 @@ async function loadAll(){
   applyAvatar(avatarPref.dataUrl || '');
   const themePref = await loadKey(KEYS.theme, { value:'dark' });
   applyTheme(themePref.value || 'dark');
+  /* For collaborators: always use the admin-broadcasted client list as source of truth */
+  if(window.currentRole && window.currentRole !== 'admin'){
+    try{
+      var _sharedCli = JSON.parse(localStorage.getItem('lumem:shared:clients') || '[]');
+      if(_sharedCli.length){
+        clients = _sharedCli; window.clients = clients;
+        /* Also persist back to collab's namespace so it survives across sessions */
+        try{ localStorage.setItem(KEYS.clients, JSON.stringify(clients)); }catch(e){}
+      }
+    }catch(e){}
+  }
   /* Reload kanban columns and tasks after cloud sync (cloud may have newer data) */
   if(typeof window.loadDemandColumns === 'function') window.loadDemandColumns();
   if(typeof window.loadDemandTasks === 'function') window.loadDemandTasks();
@@ -3876,9 +3970,9 @@ async function loadKey(key, fallback){
   }
 }
 /* ═══════════════════════════════════════════════════
-   SUPABASE CLOUD SYNC — replaces Firebase RTDB
+   SUPABASE CLOUD SYNC
    ═══════════════════════════════════════════════════ */
-var _fbApp = null, _fbAuth = null, _fbDb = null, _fbUid = null;
+var _fbUid = null;        /* alias para _sbUserId — mantido por compatibilidade interna */
 var _fbUserEmail = null;
 var _fbListeners = [];
 var _sbChannel   = null;
@@ -3969,6 +4063,8 @@ function _fbStartListeners(){
       if(k==='demandTasks'){
         try{ localStorage.setItem('lumem:tasks', JSON.stringify(v)); }catch(_){}
         if(typeof window.loadDemandTasks === 'function') window.loadDemandTasks();
+        /* Re-aplica lógica de pendentes nos dados recebidos do servidor */
+        if(typeof checkAutoPendentes === 'function') checkAutoPendentes();
         changed=true;
       }
       if(k==='demandColumns'){
@@ -3976,7 +4072,13 @@ function _fbStartListeners(){
         if(typeof window.loadDemandColumns === 'function') window.loadDemandColumns();
         changed=true;
       }
-      if(changed){ try{ renderEverything(); }catch(ex){} _fbShowSyncBadge(); }
+      if(changed){
+        try{ renderEverything(); }catch(ex){}
+        /* Se a seção de demandas estiver ativa, re-renderiza o kanban */
+        var _dSec = document.getElementById('section-demandas');
+        if(_dSec && _dSec.classList.contains('active')){ try{ renderKanban(); }catch(ex){} }
+        _fbShowSyncBadge();
+      }
     })
     .subscribe();
 }
@@ -4002,7 +4104,15 @@ async function save(key, val){
   var lk = _fbLogicalKey(key);
   if(lk) _fbSave(lk, val).catch(function(){});
 }
-const saveClients = () => { const _p = save(KEYS.clients, clients); window.clients = clients; syncFoldersWithClients(); return _p; };
+const saveClients = () => {
+  const _p = save(KEYS.clients, clients);
+  window.clients = clients;
+  syncFoldersWithClients();
+  /* Broadcast updated client list to all collaborators in real time */
+  try{ localStorage.setItem('lumem:shared:clients', JSON.stringify(clients)); }catch(e){}
+  if(typeof window._chatBroadcastData === 'function') window._chatBroadcastData('clients', clients);
+  return _p;
+};
 const saveExpenses = () => save(KEYS.expenses, expenses);
 const savePortfolio = () => save(KEYS.portfolio, portfolioItems);
 // savePortCols removed — portfolio columns no longer used
@@ -4803,7 +4913,9 @@ function navigateTo(section){
   document.getElementById('pageSub').textContent = t[1];
   if(section==='crm') { try{ renderCRM(); }catch(e){} }
   if(section==='configuracoes'){ try{ renderArchive(); }catch(e){} if(typeof _initExtraSettings==='function') try{ _initExtraSettings(); }catch(e){} }
-  if(section==='demandas') { try{ renderKanban(); }catch(e){} }
+  if(section==='demandas') {
+    try{ loadDemandTasks(); checkAutoPendentes(); renderKanban(); }catch(e){}
+  }
   if(section==='pastas'){ try{ syncFoldersWithClients(); }catch(e){} try{ renderPastas(); }catch(e){} }
   if(section==='clientes'){ try{ renderClientsTable(); }catch(e){} }
   if(section==='financeiro'){ try{ renderFinanceiro(); }catch(e){} }
@@ -4811,6 +4923,7 @@ function navigateTo(section){
     if(typeof isAdmin === 'function' && !isAdmin()){ try{ renderCollabDashboard(); }catch(e){} }
     else { try{ _renderDashSummary(); }catch(e){} try{ renderDashboard(); }catch(e){} }
   }
+  if(section==='chat'){ try{ initChat(); }catch(e){ console.error('chat init error',e); } }
   /* Salva seção no sessionStorage — sobrevive ao refresh mas limpa ao fechar/novo login */
   try{ sessionStorage.setItem('lumem:lastSection', section); }catch(e){}
 }
@@ -5165,7 +5278,7 @@ async function _pullAdmUsersFromCloud(){
   return null;
 }
 
-function _waitForFirebaseAuth(){ return Promise.resolve(null); }
+/* Firebase foi removido — auth é via Supabase */
 
 (async function _seedAdmin(){
   try{
@@ -5185,7 +5298,7 @@ function _waitForFirebaseAuth(){ return Promise.resolve(null); }
 
 
 /* ── Sections hidden for non-admin collaborators ── */
-const COLLAB_HIDDEN_SECTIONS = ['clientes','crm','financeiro','portfolio','propostas','briefings','contratos'];
+const COLLAB_HIDDEN_SECTIONS = ['clientes','crm','financeiro','portfolio','propostas','briefings','contratos','pastas'];
 
 function applyRoleRestrictions(role){
   /* Dashboard sub-sections hidden from collaborators */
@@ -5506,16 +5619,6 @@ function renderCollabDashboard(){
     '<div class="collab-stat green"><div class="collab-stat-val">' + entregues.length + '</div><div class="collab-stat-lbl">Entregues</div></div>' +
   '</div>';
 
-  /* ─── ALL DONE STATE ─── */
-  if(!myTasks.length){
-    widget.innerHTML = '<div class="collab-dash"><div class="collab-no-tasks">' +
-      '<div class="cnd-icon">🎯</div>' +
-      '<div class="cnd-title">Olá, ' + escapeHtml(displayName) + '!</div>' +
-      '<div class="cnd-sub">Nenhuma demanda atribuída ainda. Aguarde as tarefas chegarem por aqui.</div>' +
-      '</div></div>';
-    return;
-  }
-
   /* ─── HEADER ─── */
   var headerHtml = '<div class="collab-header-row">' +
     '<div>' +
@@ -5551,6 +5654,463 @@ function renderCollabDashboard(){
 }
 window.renderCollabDashboard = renderCollabDashboard;
 
+/* ════════════════════════════════════════════════════════════
+   CHAT FEATURE — Supabase Realtime broadcast + cloud persistence
+   ════════════════════════════════════════════════════════════ */
+(function(){
+  var _chatChannel   = null;
+  var _chatActive    = false;   // chat section currently visible
+  var _chatPartner   = null;    // email of active conversation partner
+  var _chatUnreadBy  = {};      // { email: count } unread counts
+  var _BASE_TITLE    = document.title || 'Lumem CRM';
+
+  /* ── helpers ── */
+  function _key(a, b){ var p=[a,b].sort(); return 'chat:conv:'+p[0]+'::'+p[1]; }
+
+  function _chatGetAdminEmail(){
+    try{
+      var u = typeof _getAdmUsers==='function'?_getAdmUsers():[];
+      var a = u.find(function(x){ return x.role==='admin'; });
+      return a?(a.email||a.username||''):'';
+    }catch(e){ return ''; }
+  }
+  function _chatGetCollabs(){
+    try{
+      var u = typeof _getAdmUsers==='function'?_getAdmUsers():[];
+      return u.filter(function(x){ return x.role!=='admin'; });
+    }catch(e){ return []; }
+  }
+  function _chatNameFor(email){
+    try{
+      var u = typeof _getAdmUsers==='function'?_getAdmUsers():[];
+      var found = u.find(function(x){ return (x.email||x.username||'').toLowerCase()===email.toLowerCase(); });
+      return found?(found.name||found.username||email):email;
+    }catch(e){ return email; }
+  }
+  function _fmtTime(ts){
+    var d=new Date(ts);
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function _fmtDate(ts){
+    var d=new Date(ts);
+    return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  }
+  function _initial(e){ return (e||'?').charAt(0).toUpperCase(); }
+  function _hl(text){ return escapeHtml(text).replace(/@(\S+)/g,'<span class="chat-mention">@$1</span>'); }
+
+  /* ── localStorage (cache layer) ── */
+  function _lsLoad(partner){
+    try{ return JSON.parse(localStorage.getItem('ls:'+_key(window.currentUser||'',partner))||'[]'); }catch(e){ return []; }
+  }
+  function _lsSave(partner, msgs){
+    if(msgs.length>1000) msgs=msgs.slice(msgs.length-1000);
+    try{ localStorage.setItem('ls:'+_key(window.currentUser||'',partner), JSON.stringify(msgs)); }catch(e){}
+  }
+
+  /* ── Supabase cloud persistence ── */
+  async function _cloudSave(partner, msgs){
+    if(!window._sb||!window.currentUser) return;
+    try{
+      var session = (await window._sb.auth.getSession()).data.session;
+      if(!session) return;
+      var uid = session.user.id;
+      var k = _key(window.currentUser, partner);
+      await window._sb.from('user_store').upsert(
+        { user_id:uid, data_key:k, value:JSON.stringify(msgs), updated_at:new Date().toISOString() },
+        { onConflict:'user_id,data_key' }
+      );
+    }catch(e){}
+  }
+  async function _cloudLoad(partner){
+    if(!window._sb||!window.currentUser) return null;
+    try{
+      var session = (await window._sb.auth.getSession()).data.session;
+      if(!session) return null;
+      var uid = session.user.id;
+      var k = _key(window.currentUser, partner);
+      var res = await window._sb.from('user_store').select('value').eq('user_id',uid).eq('data_key',k).single();
+      if(res.data&&res.data.value) return JSON.parse(res.data.value);
+    }catch(e){}
+    return null;
+  }
+  async function _cloudLoadAllKeys(){
+    /* Load all chat conversation keys for this user from Supabase */
+    if(!window._sb||!window.currentUser) return {};
+    try{
+      var session = (await window._sb.auth.getSession()).data.session;
+      if(!session) return {};
+      var uid = session.user.id;
+      var res = await window._sb.from('user_store').select('data_key,value').eq('user_id',uid).like('data_key','chat:conv:%');
+      var out = {};
+      (res.data||[]).forEach(function(row){
+        try{ out[row.data_key] = JSON.parse(row.value||'[]'); }catch(e){}
+      });
+      return out;
+    }catch(e){ return {}; }
+  }
+
+  /* ── merge & persist ── */
+  function _merge(a,b){
+    var seen={}, out=[];
+    (a||[]).concat(b||[]).forEach(function(m){ if(!seen[m.id]){ seen[m.id]=true; out.push(m); } });
+    out.sort(function(x,y){ return x.ts-y.ts; });
+    return out;
+  }
+  function _addMsg(partner, msg){
+    var arr = _lsLoad(partner);
+    if(!arr.some(function(m){ return m.id===msg.id; })){ arr.push(msg); }
+    arr.sort(function(a,b){ return a.ts-b.ts; });
+    _lsSave(partner, arr);
+    _cloudSave(partner, arr);   /* async, fire-and-forget */
+  }
+
+  /* ── tab title badge ── */
+  function _tabTitle(){
+    var total = Object.values(_chatUnreadBy).reduce(function(a,b){ return a+b; },0);
+    document.title = total>0 ? '('+total+') '+_BASE_TITLE : _BASE_TITLE;
+  }
+
+  /* ── badges ── */
+  function _updateBadges(){
+    var total = Object.values(_chatUnreadBy).reduce(function(a,b){ return a+b; },0);
+    var nav = document.getElementById('chatNavBadge');
+    if(nav){ nav.textContent=total; nav.style.display=total>0?'inline-flex':'none'; }
+    /* sidebar items */
+    document.querySelectorAll('.chat-conv-item').forEach(function(item){
+      var cnt = _chatUnreadBy[item.dataset.email]||0;
+      var b = item.querySelector('.chat-conv-badge');
+      if(!b){ b=document.createElement('div'); b.className='chat-conv-badge'; item.appendChild(b); }
+      b.textContent=cnt; b.style.display=cnt>0?'flex':'none';
+    });
+    _tabTitle();
+  }
+
+  /* ── render messages ── */
+  function _renderMsgs(partner){
+    var el=document.getElementById('chatMessages'); if(!el) return;
+    var msgs=_lsLoad(partner);
+    if(!msgs.length){
+      el.innerHTML='<div class="chat-empty"><div class="chat-empty-icon">💬</div><div class="chat-empty-msg">Nenhuma mensagem ainda.<br>Diga olá!</div></div>';
+      return;
+    }
+    var me=(window.currentUser||'').toLowerCase();
+    var html=''; var lastDate='';
+    msgs.forEach(function(m){
+      var d=_fmtDate(m.ts||0);
+      if(d!==lastDate){
+        html+='<div style="text-align:center;font-size:10px;color:var(--text-dim);margin:8px 0;">'+d+'</div>';
+        lastDate=d;
+      }
+      var sent=(m.from||'').toLowerCase()===me;
+      html+='<div class="chat-msg '+(sent?'sent':'recv')+'">'
+        +(sent?'':'<div class="chat-msg-sender">'+escapeHtml(m.fromName||m.from||'')+'</div>')
+        +'<div class="chat-bubble">'+_hl(m.text||'')+'</div>'
+        +'<div class="chat-msg-meta">'+_fmtTime(m.ts||0)+'</div>'
+        +'</div>';
+    });
+    el.innerHTML=html;
+    el.scrollTop=el.scrollHeight;
+  }
+
+  /* ── open a conversation ── */
+  function _openConv(partnerEmail, partnerName){
+    _chatPartner=partnerEmail;
+    _chatUnreadBy[partnerEmail]=0;
+    _updateBadges();
+    var prompt=document.getElementById('chatSelectPrompt');
+    var area=document.getElementById('chatConvArea');
+    if(prompt) prompt.style.display='none';
+    if(area) area.style.display='flex';
+    var av=document.getElementById('chatHeaderAvatar');
+    var nm=document.getElementById('chatHeaderName');
+    if(av) av.textContent=_initial(partnerEmail);
+    if(nm) nm.textContent=partnerName||_chatNameFor(partnerEmail)||partnerEmail;
+    _renderMsgs(partnerEmail);
+    document.querySelectorAll('.chat-conv-item').forEach(function(el){
+      el.classList.toggle('active',el.dataset.email===partnerEmail);
+    });
+    /* Request sync of offline messages from partner */
+    if(_chatChannel){
+      _chatChannel.send({ type:'broadcast', event:'sync-req', payload:{ to:partnerEmail, from:window.currentUser||'' } });
+    }
+    /* Also load from cloud and merge */
+    _cloudLoad(partnerEmail).then(function(cloud){
+      if(cloud&&cloud.length){
+        var merged=_merge(_lsLoad(partnerEmail),cloud);
+        _lsSave(partnerEmail,merged);
+        if(_chatPartner===partnerEmail) _renderMsgs(partnerEmail);
+      }
+    });
+  }
+  window._chatOpenConvFromSidebar=function(el){ _openConv(el.dataset.email, el.dataset.name); };
+
+  /* ── sidebar ── */
+  function _renderSidebar(){
+    var list=document.getElementById('chatConvList'); if(!list) return;
+    var collabs=_chatGetCollabs();
+    if(!collabs.length){ list.innerHTML='<div style="padding:16px;font-size:12px;color:var(--text-dim);text-align:center;">Nenhum colaborador cadastrado.</div>'; return; }
+    list.innerHTML=collabs.map(function(u){
+      var email=u.email||u.username||'';
+      var name=u.name||u.username||email;
+      var unread=_chatUnreadBy[email]||0;
+      var msgs=_lsLoad(email);
+      var preview=msgs.length?(msgs[msgs.length-1].text||'').slice(0,38):'Sem mensagens';
+      return '<div class="chat-conv-item'+(email===_chatPartner?' active':'')
+        +'" data-email="'+escapeHtml(email)+'" data-name="'+escapeHtml(name)+'" onclick="_chatOpenConvFromSidebar(this)">'
+        +'<div class="chat-conv-avatar">'+_initial(email)+'</div>'
+        +'<div class="chat-conv-info">'
+          +'<div class="chat-conv-name">'+escapeHtml(name)+'</div>'
+          +'<div class="chat-conv-preview">'+escapeHtml(preview)+'</div>'
+        +'</div>'
+        +(unread?'<div class="chat-conv-badge">'+unread+'</div>':'')
+        +'</div>';
+    }).join('');
+  }
+
+  /* ── receive incoming broadcast ── */
+  function _receive(payload){
+    var msg=payload.msg; if(!msg) return;
+    var me=(window.currentUser||'').toLowerCase();
+    var from=(msg.from||'').toLowerCase();
+    var to=(msg.to||'').toLowerCase();
+    if(from===me) return; /* own echo */
+
+    var admin=typeof isAdmin==='function'&&isAdmin();
+    var adminEmail=_chatGetAdminEmail().toLowerCase();
+    var partner=null;
+
+    if(admin){
+      /* Admin receives anything sent TO their email */
+      if(to===me||to===adminEmail){ partner=from; }
+    } else {
+      /* Collaborator receives only messages from admin targeted at them */
+      if(from===adminEmail&&(to===me)){ partner=from; }
+    }
+    if(!partner) return;
+
+    _addMsg(partner, msg);
+
+    if(_chatActive && _chatPartner && _chatPartner.toLowerCase()===partner){
+      _renderMsgs(_chatPartner);
+    } else {
+      _chatUnreadBy[partner]=(_chatUnreadBy[partner]||0)+1;
+      _updateBadges();
+    }
+
+    /* In-app notification bell */
+    if(window.createNotification&&window.currentUser){
+      createNotification(window.currentUser,'chat','💬 '+(msg.fromName||msg.from||'')+(msg.text?': '+msg.text.slice(0,70):''),null);
+    }
+    /* Browser notification */
+    try{
+      if(typeof Notification!=='undefined'&&Notification.permission==='granted'){
+        new Notification((msg.fromName||msg.from||'Chat'), { body:(msg.text||'').slice(0,100) });
+      }
+    }catch(e){}
+
+    if(admin) _renderSidebar();
+  }
+
+  /* ── handle sync-request (offline catch-up) ── */
+  function _handleSyncReq(payload){
+    /* Someone is asking for our stored history with them */
+    var requester=(payload.from||'').toLowerCase();
+    var target=(payload.to||'').toLowerCase();
+    var me=(window.currentUser||'').toLowerCase();
+    if(target!==me) return;
+    var msgs=_lsLoad(requester);
+    if(!msgs.length) return;
+    /* Send history back as sync-response */
+    if(_chatChannel){
+      _chatChannel.send({ type:'broadcast', event:'sync-res', payload:{ to:requester, from:me, msgs:msgs } });
+    }
+  }
+
+  /* ── handle sync-response ── */
+  function _handleSyncRes(payload){
+    var to=(payload.to||'').toLowerCase();
+    var me=(window.currentUser||'').toLowerCase();
+    if(to!==me) return;
+    var from=(payload.from||'').toLowerCase();
+    var incoming=payload.msgs||[];
+    if(!incoming.length) return;
+    var merged=_merge(_lsLoad(from), incoming);
+    _lsSave(from, merged);
+    _cloudSave(from, merged);
+    if(_chatActive&&_chatPartner&&_chatPartner.toLowerCase()===from) _renderMsgs(from);
+  }
+
+  /* ── send ── */
+  function _send(){
+    var input=document.getElementById('chatInput'); if(!input) return;
+    var text=input.value.trim(); if(!text||!window.currentUser) return;
+    if(!_chatPartner){ return; }
+    var me=window.currentUser;
+    var myName=_chatNameFor(me);
+    var mentions=(text.match(/@(\S+)/g)||[]).map(function(m){ return m.slice(1).toLowerCase(); });
+    var msg={ id:'m_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), from:me, fromName:myName, to:_chatPartner, text:text, mentions:mentions, ts:Date.now() };
+
+    _addMsg(_chatPartner, msg);
+    _renderMsgs(_chatPartner);
+    input.value=''; input.style.height='';
+
+    if(_chatChannel){
+      _chatChannel.send({ type:'broadcast', event:'message', payload:{msg:msg} });
+    }
+  }
+
+  /* ── data sync: admin broadcasts client/task list to collaborators ── */
+  function _handleDataSync(payload){
+    var key=payload.key; var data=payload.data;
+    if(!key||!data) return;
+    /* Both admin and collabs receive task updates — tasks are shared */
+    if(key==='tasks'){
+      try{ localStorage.setItem('lumem:tasks', JSON.stringify(data)); }catch(e){}
+      if(typeof window.demandTasks!=='undefined'){ try{ window.demandTasks=data; demandTasks=data; }catch(e){} }
+      if(typeof renderKanban==='function'){ try{ renderKanban(); }catch(e){} }
+      return;
+    }
+    /* clients — only collabs need this (admin already has it) */
+    if(typeof isAdmin==='function'&&isAdmin()) return;
+    if(key==='clients'){
+      try{ localStorage.setItem('lumem:shared:clients', JSON.stringify(data)); }catch(e){}
+      if(typeof clients!=='undefined'){ try{ window.clients=data; clients=data; }catch(e){} }
+      if(typeof KEYS!=='undefined'&&KEYS.clients){ try{ localStorage.setItem(KEYS.clients,JSON.stringify(data)); }catch(e){} }
+    }
+  }
+  function _handleDataReq(payload){
+    /* Only admin responds */
+    if(typeof isAdmin!=='function'||!isAdmin()) return;
+    var key=payload.key;
+    if(key==='tasks'&&typeof demandTasks!=='undefined'){
+      setTimeout(function(){
+        if(_chatChannel) _chatChannel.send({ type:'broadcast', event:'data-sync', payload:{key:'tasks', data:demandTasks||[], from:window.currentUser||''} });
+      },200);
+    }
+    if(key==='clients'&&typeof clients!=='undefined'){
+      setTimeout(function(){
+        if(_chatChannel) _chatChannel.send({ type:'broadcast', event:'data-sync', payload:{key:'clients', data:clients||[], from:window.currentUser||''} });
+      }, 300);
+    }
+  }
+  /* Exposed so saveClients() can call it */
+  window._chatBroadcastData=function(key,data){
+    if(_chatChannel&&window.currentUser){
+      _chatChannel.send({ type:'broadcast', event:'data-sync', payload:{key:key, data:data, from:window.currentUser||''} });
+    }
+  };
+
+  /* ── subscribe once ── */
+  function _subscribe(){
+    if(_chatChannel||!window._sb) return;
+    _chatChannel=window._sb.channel('lumem-chat-v1',{ config:{ broadcast:{ self:false } } });
+    _chatChannel
+      .on('broadcast',{event:'message'},   function(p){ _receive(p.payload||p); })
+      .on('broadcast',{event:'sync-req'},  function(p){ _handleSyncReq(p.payload||p); })
+      .on('broadcast',{event:'sync-res'},  function(p){ _handleSyncRes(p.payload||p); })
+      .on('broadcast',{event:'data-sync'}, function(p){ _handleDataSync(p.payload||p); })
+      .on('broadcast',{event:'data-req'},  function(p){ _handleDataReq(p.payload||p); })
+      .subscribe();
+  }
+
+  /* ── init chat section ── */
+  function initChat(){
+    _chatActive=true;
+    _subscribe();
+    var admin=typeof isAdmin==='function'&&isAdmin();
+    var sidebar=document.getElementById('chatSidebarAdmin');
+    var prompt=document.getElementById('chatSelectPrompt');
+    var area=document.getElementById('chatConvArea');
+
+    if(admin){
+      if(sidebar) sidebar.style.display='flex';
+      /* Load ALL cloud histories on first open */
+      _cloudLoadAllKeys().then(function(all){
+        Object.keys(all).forEach(function(k){
+          /* k = "chat:conv:a::b" — figure out partner email */
+          var parts=k.replace('chat:conv:','').split('::');
+          var me=(window.currentUser||'').toLowerCase();
+          var partner=parts[0].toLowerCase()===me?parts[1]:parts[0];
+          var merged=_merge(_lsLoad(partner),all[k]);
+          _lsSave(partner,merged);
+        });
+        _renderSidebar();
+        if(_chatPartner) _openConv(_chatPartner,'');
+      });
+      _renderSidebar();
+      if(_chatPartner){
+        if(prompt) prompt.style.display='none';
+        if(area) area.style.display='flex';
+        _openConv(_chatPartner,'');
+      } else {
+        if(prompt) prompt.style.display='flex';
+        if(area) area.style.display='none';
+      }
+    } else {
+      if(sidebar) sidebar.style.display='none';
+      if(prompt) prompt.style.display='none';
+      if(area) area.style.display='flex';
+      var adminEmail=_chatGetAdminEmail();
+      _chatPartner=adminEmail||'admin';
+      var av=document.getElementById('chatHeaderAvatar');
+      var nm=document.getElementById('chatHeaderName');
+      if(av) av.textContent='A';
+      if(nm) nm.textContent='Admin';
+      /* Merge cloud history */
+      _cloudLoad(_chatPartner).then(function(cloud){
+        if(cloud&&cloud.length){
+          var merged=_merge(_lsLoad(_chatPartner),cloud);
+          _lsSave(_chatPartner,merged);
+        }
+        _renderMsgs(_chatPartner);
+      });
+      _renderMsgs(_chatPartner);
+      /* Request offline catch-up from admin */
+      if(_chatChannel&&window.currentUser){
+        _chatChannel.send({ type:'broadcast', event:'sync-req', payload:{ to:_chatPartner, from:window.currentUser } });
+      }
+    }
+
+    if(_chatPartner){ _chatUnreadBy[_chatPartner]=0; _updateBadges(); }
+
+    /* Wire buttons once */
+    var btn=document.getElementById('chatSendBtn');
+    var inp=document.getElementById('chatInput');
+    if(btn&&!btn._w){ btn._w=true; btn.addEventListener('click',_send); }
+    if(inp&&!inp._w){
+      inp._w=true;
+      inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); _send(); } });
+      inp.addEventListener('input',function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,100)+'px'; });
+    }
+  }
+  window.initChat=initChat;
+
+  /* Auto-subscribe after login so notifications arrive outside chat too */
+  var _si=setInterval(function(){
+    if(window.currentUser&&window._sb){
+      _subscribe();
+      /* Collaborators: request fresh client + task list from admin as soon as connected */
+      if(typeof isAdmin==='function'&&!isAdmin()){
+        setTimeout(function(){
+          if(_chatChannel){
+            _chatChannel.send({ type:'broadcast', event:'data-req', payload:{key:'clients', from:window.currentUser||''} });
+            _chatChannel.send({ type:'broadcast', event:'data-req', payload:{key:'tasks', from:window.currentUser||''} });
+          }
+        }, 1000);
+      }
+      clearInterval(_si);
+    }
+  },1500);
+
+  /* Mark inactive when leaving chat section */
+  document.addEventListener('click',function(e){
+    var item=e.target.closest('.nav-item[data-section]');
+    if(item&&item.dataset.section!=='chat') _chatActive=false;
+  },true);
+
+})();
+/* ── End Chat Feature ── */
+
 async function _enterDashboard(email, role, fromAutoRestore){
   currentUser = email;
   window.currentUser = email;   /* expose globally so admin panel can detect session */
@@ -5573,12 +6133,12 @@ async function _enterDashboard(email, role, fromAutoRestore){
     var idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
     if(idx >= 0){ users[idx].lastLogin = Date.now(); localStorage.setItem('lumem:adm:users', JSON.stringify(users)); _pushAdmUsersToCloud(users); }
   }catch(ex){}
-  /* ── Set email-based Firebase identity so paths work even if UID is null ── */
+  /* ── Set email-based cloud identity so sync paths work ── */
   _fbUserEmail = email;
   /* ── Load this user's own data (isolated namespace) ── */
   migrateToUserNamespace(email);   /* one-time: copy legacy data for Laura */
   KEYS = makeUserKeys(email);      /* all future reads/writes use this user's prefix */
-  await loadAll();                 /* reload everything from user-specific keys (Firebase first) */
+  await loadAll();                 /* reload everything from user-specific keys (cloud first) */
   _fbStartListeners(); /* start real-time cross-device sync */
   if(!fromAutoRestore) logActivity('🔐', 'sistema', 'Login realizado', email);
   /* Clear password field — browsers interpret this as "login succeeded, save credentials" */
@@ -5597,11 +6157,8 @@ async function _enterDashboard(email, role, fromAutoRestore){
     if(_ejsCfg.tpl) window.LUMEM_EMAILJS_TPL = _ejsCfg.tpl;
     if(_ejsCfg.key && window.emailjs){ try{ window.emailjs.init(_ejsCfg.key); }catch(ex){} }
   }catch(ex){}
-  /* Restaura última aba da sessão atual; nova sessão sempre abre no dashboard */
-  var _lastSec = null;
-  try{ _lastSec = sessionStorage.getItem('lumem:lastSection'); }catch(e){}
-  var _restorableSections = ['dashboard','clientes','pastas','crm','financeiro','portfolio','propostas','briefings','contratos','demandas'];
-  navigateTo((_lastSec && _restorableSections.includes(_lastSec)) ? _lastSec : 'dashboard');
+  /* Sempre abre no Dashboard ao fazer login — tanto admin quanto colaborador */
+  navigateTo('dashboard');
   requestAnimationFrame(()=>{ if(window.initParticles) window.initParticles(); });
   /* Request browser notification permission */
   try{ if(typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission(); }catch(e){}
@@ -5783,7 +6340,8 @@ const pageTitles = {
   contratos:['Contratos','Contratos assinados e modelos.'],
   demandas:['Demandas','Gestão de tarefas da equipe'],
   pastas:['Pastas','Arquivo permanente de projetos aprovados por cliente.'],
-  configuracoes:['Configurações','Conta e aparência do painel.']
+  configuracoes:['Configurações','Conta e aparência do painel.'],
+  chat:['Chat','Mensagens em tempo real com a equipe.']
 };
 document.getElementById('mainNav').addEventListener('click', (e)=>{
   const item = e.target.closest('.nav-item[data-section]'); if(!item) return;
@@ -7962,9 +8520,6 @@ window.addEventListener('mousemove', (e)=>{
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             Configurações
           </div>
-          <div class="admp-nav-item" onclick="admNav('firebase')" data-page="firebase">
-            🔥 Firebase
-          </div>
           <div class="admp-nav-item" onclick="admNav('personalizar')" data-page="personalizar">🎨 Personalização</div>
         </nav>
         <div class="admp-sb-bottom">
@@ -8190,28 +8745,6 @@ window.addEventListener('mousemove', (e)=>{
           </div>
         </div>
 
-        <div class="admp-page" id="admPage-firebase">
-          <div class="admp-page-hdr">
-            <div>
-              <h2 class="admp-page-title">Firebase</h2>
-              <p class="admp-page-sub">Configuração de credenciais Firebase.</p>
-            </div>
-          </div>
-          <div id="admpTab-firebase" class="admp-tab-content">
-            <h2 style="font-size:16px;font-weight:700;margin-bottom:4px;color:var(--text);">Configuração Firebase</h2>
-            <p style="font-size:12px;color:var(--text-dim);margin-bottom:20px;">Cole abaixo o objeto <code>firebaseConfig</code> do seu projeto Firebase (obtido no Console do Firebase). Salve e recarregue.</p>
-            <div style="display:flex;flex-direction:column;gap:12px;max-width:520px;">
-              <div>
-                <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px;">Código do Firebase</label>
-                <textarea id="fbCfgJson" rows="12" spellcheck="false" placeholder="Cole aqui o código do Firebase, por exemplo:&#10;&#10;const firebaseConfig = {&#10;  apiKey: &quot;AIza...&quot;,&#10;  authDomain: &quot;meu-projeto.firebaseapp.com&quot;,&#10;  databaseURL: &quot;https://meu-projeto-default-rtdb.firebaseio.com&quot;,&#10;  projectId: &quot;meu-projeto&quot;,&#10;  storageBucket: &quot;meu-projeto.appspot.com&quot;,&#10;  messagingSenderId: &quot;123456789&quot;,&#10;  appId: &quot;1:123:web:abc&quot;&#10;};" style="width:100%;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;box-sizing:border-box;font-family:monospace;line-height:1.6;resize:vertical;"></textarea>
-              </div>
-              <div id="fbCfgMsg" style="display:none;font-size:12px;padding:8px 12px;border-radius:8px;text-align:center;"></div>
-              <button onclick="window._saveFbConfig()" style="padding:10px 20px;background:linear-gradient(135deg,#FF5470,#FF0A33);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;align-self:flex-start;">Salvar e Aplicar</button>
-              <p style="font-size:11px;color:var(--text-dimmer);margin-top:-4px;">Após salvar, a página será recarregada automaticamente.</p>
-            </div>
-          </div>
-        </div>
-
         <div class="admp-page" id="admPage-personalizar">
   <div style="max-width:640px;">
     <h2 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">Personalização</h2>
@@ -8350,7 +8883,7 @@ function monthName(m){
 function getUsers(){ return ls(K.users) || []; }
 function saveUsers(u){
   lss(K.users, u);
-  /* Mirror to Firebase so all devices see the same accounts */
+  /* Mirror to Supabase so all devices see the same accounts */
   if(typeof _pushAdmUsersToCloud === 'function') _pushAdmUsersToCloud(u);
 }
 function getUserByEmail(email){ return getUsers().find(function(u){ return u.email.toLowerCase() === email.toLowerCase(); }); }
@@ -8603,7 +9136,7 @@ window.admNav = function(page){
   if(page === 'archive')   admRenderArchive();
   if(page === 'logs')      admRenderLogs();
   if(page === 'settings')  admLoadSettings();
-  if(page === 'firebase')  { if(typeof _loadFbCfgFields === 'function') _loadFbCfgFields(); }
+  /* firebase tab removed */
 };
 
 /* ════════════════════════════════════
@@ -8842,7 +9375,7 @@ window.admConfirmAddUser = async function(){
     }
   }catch(ex){}
   saveUsers(users);
-  /* Push updated main auth list to Firebase so collaborators can log in from any device */
+  /* Push updated main auth list to Supabase so collaborators can log in from any device */
   try{
     var _allMainUsers = JSON.parse(localStorage.getItem('lumem:adm:users')||'[]');
     await _pushAdmUsersToCloud(_allMainUsers);
@@ -8888,7 +9421,7 @@ window.admConfirmDeleteUser = async function(idx){
     var mainUsers = JSON.parse(localStorage.getItem('lumem:adm:users')||'[]');
     mainUsers = mainUsers.filter(function(mu){ return (mu.email||'').toLowerCase() !== email.toLowerCase(); });
     localStorage.setItem('lumem:adm:users', JSON.stringify(mainUsers));
-    /* Push deletion to Firebase so other devices sync */
+    /* Push deletion to Supabase so other devices sync */
     await _pushAdmUsersToCloud(mainUsers);
   }catch(_ex){}
   addLog(getSession() ? getSession().email : 'admin', 'admin', 'Colaborador excluído: ' + email);
@@ -8949,7 +9482,7 @@ window.admConfirmResetPwd = async function(idx){
   var users = getUsers();
   users[idx].passwordHash = hash;
   saveUsers(users);
-  /* Sync to main auth store + Firebase so other devices pick up new password */
+  /* Sync to main auth store + Supabase so other devices pick up new password */
   try{
     var mainUsers = JSON.parse(localStorage.getItem('lumem:adm:users')||'[]');
     var mi = mainUsers.findIndex(function(u){ return (u.email||'').toLowerCase() === (users[idx].email||'').toLowerCase(); });
@@ -9479,6 +10012,10 @@ function saveDemandTasks(){
   }
   /* sync demand tasks to cloud */
   _fbSave('demandTasks', demandTasks).catch(function(){});
+  /* broadcast task updates to all connected users (cross-device real-time sync) */
+  if(typeof window._chatBroadcastData === 'function'){
+    window._chatBroadcastData('tasks', demandTasks);
+  }
   /* Mantém referência global em sincronia */
   window.demandTasks = demandTasks;
 }
@@ -9541,47 +10078,88 @@ function playBell(type){
 }
 window.playBell = playBell;
 
-/* Unlock audio context on first user interaction */
-document.addEventListener('click', function _unlockAudio(){
-  var ctx = _getAudioCtx();
-  if(ctx && ctx.state === 'suspended') ctx.resume();
-  document.removeEventListener('click', _unlockAudio);
-}, { once: true });
+/* Unlock audio context on first user interaction — covers click, touch, key, mousedown */
+['click','keydown','touchstart','mousedown'].forEach(function(ev){
+  document.addEventListener(ev, function _unlockAudio(){
+    var ctx = _getAudioCtx();
+    if(ctx && ctx.state === 'suspended') ctx.resume();
+  }, { once: true, capture: true });
+});
 
 /* Columns that are "past production" — task is already in review/approval flow,
    so we do NOT drop it back to PENDENTES even if it's overdue */
 function getSafeFromPendentes(){ return COLUMNS.filter(function(c){ return c.safe; }).map(function(c){ return c.id; }); }
 
+/*
+ * CICLO AUTO-PENDENTES (igual ao ClickUp):
+ *  1. Tarefa passa do prazo → cai pra pendentes + toca som
+ *  2. Usuário arrasta pra fora → grava t._pendAck = "dueDate_dueTime" NA TAREFA (persistente)
+ *  3. Usuário define novo prazo e ele vence → prazo mudou, _pendAck não coincide → cai de novo ✓
+ *  4. Tarefa chega em coluna safe (aprovação etc.) → nunca cai ✓
+ *
+ * _pendAck é salvo junto com a tarefa no localStorage/Supabase, sobrevive ao reload.
+ */
+
 function checkAutoPendentes(){
   var changed = false;
   demandTasks.forEach(function(t){
-    if(t.dueDate && isOverdue(t)
-        && t.column !== 'pendentes'
-        && !t.manualOverride
-        && getSafeFromPendentes().indexOf(t.column) === -1){
-      t.column = 'pendentes';
-      changed = true;
-      /* Only notify once per task */
-      var notifKey = 'lumem:notified:' + t.id;
-      if(!localStorage.getItem(notifKey)){
-        localStorage.setItem(notifKey, '1');
-        /* 🔔 Play overdue alert sound */
-        playBell('overdue');
-        /* In-app notification */
-        if(t.assigneeEmail && window.createNotification){
-          window.createNotification(t.assigneeEmail, 'overdue', '⏰ ' + (t.title||'Demanda') + ' está atrasada!', t.id);
-        }
-        /* Browser notification */
-        try{
-          if(typeof Notification !== 'undefined' && Notification.permission === 'granted'){
-            new Notification('LUMEM Studio', { body: (t.title||'Demanda') + ' está atrasada!', icon: '' });
-          }
-        }catch(e){}
+    /* Limpa flags legados gravados em sessões antigas */
+    if(t.manualOverride !== undefined) delete t.manualOverride;
+
+    if(!t.dueDate || !isOverdue(t)) return;
+    if(t.column === 'pendentes') return;
+    if(getSafeFromPendentes().indexOf(t.column) !== -1) return;
+
+    /* _pendAck: string "dueDate_dueTime" gravada na tarefa quando usuário arrasta pra fora.
+       Se coincide com o prazo atual → respeita decisão do usuário.
+       Se prazo mudou (ou nunca saiu de pendentes) → cai de novo. */
+    var _curDueKey = (t.dueDate||'') + '_' + (t.dueTime||'');
+    if(t._pendAck === _curDueKey) return;
+
+    /* Prazo diferente (novo prazo definido e venceu) ou nunca foi arrastado → cai */
+    t.column = 'pendentes';
+    delete t._pendAck; /* limpa — nova rodada começa */
+    changed = true;
+
+    /* 🔔 Toca o som toda vez que cai */
+    playBell('overdue');
+
+    /* Notificação in-app e browser apenas uma vez por prazo */
+    var notifKey = 'lumem:notified:' + t.id + ':' + _curDueKey;
+    if(!localStorage.getItem(notifKey)){
+      localStorage.setItem(notifKey, '1');
+      if(t.assigneeEmail && window.createNotification){
+        window.createNotification(t.assigneeEmail, 'overdue', '⏰ ' + (t.title||'Demanda') + ' está atrasada!', t.id);
       }
+      try{
+        if(typeof Notification !== 'undefined' && Notification.permission === 'granted'){
+          new Notification('LUMEM Studio', { body: (t.title||'Demanda') + ' está atrasada!', icon: '' });
+        }
+      }catch(e){}
     }
   });
-  if(changed){ saveDemandTasks(); renderKanban(); }
+  /* Salva se houve mudança — NÃO chama renderKanban aqui para evitar recursão.
+     O renderKanban que chamou esta função (ou o _autoOverdueCheck) faz o re-render. */
+  if(changed){ saveDemandTasks(); }
+  return changed;
 }
+
+/* ── Auto-check overdue tasks every 1 second — live, instant move to pendentes ── */
+(function(){
+  function _autoOverdueCheck(){
+    if(!window.currentUser) return;
+    loadDemandTasks();           /* garante dados frescos do localStorage */
+    var _moved = checkAutoPendentes();
+    /* checkAutoPendentes já atualizou demandTasks em memória e salvou no localStorage.
+       Renderiza agora com os dados já corretos em memória. */
+    var sec = document.getElementById('section-demandas');
+    var secActive = sec && sec.classList.contains('active');
+    if(secActive || _moved){
+      renderKanban();
+    }
+  }
+  setInterval(_autoOverdueCheck, 1000);
+})();
 
 /* ── Demand view state ── */
 var _demandView = 'board';
@@ -9601,9 +10179,9 @@ window.setDemandView = function(v){
   if(board)  board.style.display  = (v === 'board')    ? '' : 'none';
   if(listV)  listV.style.display  = (v === 'list')     ? '' : 'none';
   if(calV)   calV.style.display   = (v === 'calendar') ? '' : 'none';
-  if(v === 'board')    renderKanban();
-  if(v === 'list')     renderDemandList();
-  if(v === 'calendar') renderDemandCal();
+  if(v === 'board')    { loadDemandTasks(); checkAutoPendentes(); renderKanban(); }
+  if(v === 'list')     { loadDemandTasks(); renderDemandList(); }
+  if(v === 'calendar') { loadDemandTasks(); renderDemandCal(); }
 };
 
 window.setListSort = function(col){
@@ -9895,8 +10473,8 @@ function visibleFilteredTasks(){
 })();
 
 function renderKanban(){
-  loadDemandTasks();
-  checkAutoPendentes();
+  /* NUNCA chama checkAutoPendentes() aqui — lógica de negócio fica em _autoOverdueCheck.
+     Apenas renderiza o que já está em demandTasks (atualizado pelo chamador). */
   _renderDemandStats();
 
   const board = document.getElementById('demandKanbanBoard');
@@ -9907,8 +10485,8 @@ function renderKanban(){
     board._demandScrollInited = true;
     let _isDown = false, _startX = 0, _scrollLeft = 0;
     board.addEventListener('mousedown', e => {
-      // Only drag on empty board area, not on cards/buttons
-      if(e.target.closest('.k-card, button, a, select, input')) return;
+      // Only drag on board/column background — skip interactive elements
+      if(e.target.closest('button, a, select, input, .kc-dropdown, .k-card-inner')) return;
       _isDown = true;
       board.classList.add('is-dragging');
       _startX = e.pageX - board.offsetLeft;
@@ -9923,9 +10501,19 @@ function renderKanban(){
       board.scrollLeft = _scrollLeft - (x - _startX);
     });
     board.addEventListener('wheel', e => {
-      if(Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      board.scrollLeft += e.deltaY * 1.4;
+      /* Shift+scroll → horizontal pan (like Trello/ClickUp) */
+      if(e.shiftKey){
+        e.preventDefault();
+        board.scrollLeft += e.deltaY * 1.4;
+        return;
+      }
+      /* Native horizontal trackpad swipe → horizontal pan */
+      if(Math.abs(e.deltaX) > Math.abs(e.deltaY)){
+        e.preventDefault();
+        board.scrollLeft += e.deltaX;
+        return;
+      }
+      /* Vertical scroll → let the page handle it normally */
     }, { passive: false });
   }
 
@@ -10010,9 +10598,17 @@ function renderKanban(){
       }
 
       // Just update the column — assignee stays whatever was set in the modal
+      const _fromCol = task.column;
       task.column = col.id;
       logActivity('↔️', 'demandas', 'Demanda movida', (task.title||'')+'');
-      task.manualOverride = true; // user moved manually — don't auto-drop back to pendentes
+      /* Controla auto-drop via _pendAck persistente na tarefa:
+         - Saiu de pendentes → grava prazo atual (protege tarefa de re-drop para ESSE prazo)
+         - Chegou em pendentes → limpa (próximo vencimento derruba de novo) */
+      if(_fromCol === 'pendentes' && col.id !== 'pendentes'){
+        task._pendAck = (task.dueDate||'') + '_' + (task.dueTime||'');
+      } else if(col.id === 'pendentes'){
+        delete task._pendAck;
+      }
       playBell('move');
       saveDemandTasks();
       renderKanban();
@@ -10212,9 +10808,15 @@ function renderKanban(){
         }
 
         // Just update the column — assignee stays whatever was set in the modal
+        const _fromColT = task.column;
         task.column = targetColId;
         logActivity('↔️', 'demandas', 'Demanda movida', (task.title||'')+'');
-        task.manualOverride = true; // user moved manually — don't auto-drop back to pendentes
+        /* Mesmo controle do mouse: _pendAck persistente gravado na tarefa */
+        if(_fromColT === 'pendentes' && targetColId !== 'pendentes'){
+          task._pendAck = (task.dueDate||'') + '_' + (task.dueTime||'');
+        } else if(targetColId === 'pendentes'){
+          delete task._pendAck;
+        }
         playBell('move');
         saveDemandTasks();
         renderKanban();
@@ -10359,11 +10961,12 @@ function _renderTaskPanel(task){
   if(!task) return;
   _tpPrio = task.priority || 'media';
 
-  // Build client options
+  // Build client options — module var → user key → shared broadcast cache
   var _clientList = [];
   try {
     if(typeof clients !== 'undefined' && Array.isArray(clients) && clients.length) _clientList = clients;
     else if(typeof KEYS !== 'undefined' && KEYS.clients) _clientList = JSON.parse(localStorage.getItem(KEYS.clients)||'[]');
+    if(!_clientList.length){ var _sc=JSON.parse(localStorage.getItem('lumem:shared:clients')||'[]'); if(_sc.length) _clientList=_sc; }
   } catch(e){}
   var clientOpts = '<option value="">— sem cliente —</option>' + _clientList.map(c =>
     '<option value="'+escapeHtml(c.name)+'"'+(task.clientName===c.name?' selected':'')+'>'+escapeHtml(c.name)+'</option>'
@@ -11119,13 +11722,21 @@ window._tpRemoveTag = _tpRemoveTag;
 function _renderDemandModal(task){
   const box = document.getElementById('dmBox');
 
-  // Build client options — read from module var 'clients' OR localStorage fallback
+  // Build client options — module var → user key → shared broadcast cache
   var _clientList = [];
   try {
-    if(typeof clients !== 'undefined' && Array.isArray(clients) && clients.length){
-      _clientList = clients;
-    } else if(typeof KEYS !== 'undefined' && KEYS.clients){
-      _clientList = JSON.parse(localStorage.getItem(KEYS.clients) || '[]');
+    /* Collaborators: always use the admin-broadcasted list (freshest); admin uses in-memory */
+    var _isAdminNow = typeof isAdmin === 'function' && isAdmin();
+    if(!_isAdminNow){
+      var _shared = JSON.parse(localStorage.getItem('lumem:shared:clients') || '[]');
+      if(_shared.length){ _clientList = _shared; }
+    }
+    if(!_clientList.length){
+      if(typeof clients !== 'undefined' && Array.isArray(clients) && clients.length){
+        _clientList = clients;
+      } else if(typeof KEYS !== 'undefined' && KEYS.clients){
+        _clientList = JSON.parse(localStorage.getItem(KEYS.clients) || '[]');
+      }
     }
   } catch(e){ _clientList = []; }
   const clientOpts = _clientList.map(c =>
@@ -11550,12 +12161,18 @@ function _saveDemand(){
       var oldTask = demandTasks[idx];
       var prevAssigneeEmail = oldTask.assigneeEmail || '';
       var prevTitle = oldTask.title || '';
+      var prevDueKey = (oldTask.dueDate||'') + '_' + (oldTask.dueTime||'');
       demandTasks[idx] = Object.assign(demandTasks[idx], {
         title, description: (document.getElementById('dmDesc')||{}).value || '',
         assignee, assigneeEmail, column, dueDate, dueTime, setor,
         priority: _activePrio, tags: _pendingTags.slice(), clientName,
         coverImage: _pendingCoverImage, driveLink, links
       });
+      /* Se o prazo mudou → limpa _pendAck para que o novo prazo inicie um ciclo novo */
+      var newDueKey = (dueDate||'') + '_' + (dueTime||'');
+      if(newDueKey !== prevDueKey){
+        delete demandTasks[idx]._pendAck;
+      }
       /* Notify if assignee changed or title changed */
       if(assigneeEmail && window.createNotification && (assigneeEmail !== prevAssigneeEmail || title !== prevTitle)){
         window.createNotification(assigneeEmail, 'assigned', 'Nova demanda: ' + title, _editingTaskId);
@@ -11749,15 +12366,6 @@ async function _sendOtpEmail(email){
   _otpEmail  = email;
   _otpExpiry = Date.now() + 10 * 60 * 1000; // 10 min
 
-  /* Store in Firebase so admin can look it up if needed */
-  if(_fbDb){
-    try{
-      await _fbDb.ref('studio/otps/' + btoa(email).replace(/=/g,'')).set({
-        code: _otpCode, email: email, exp: _otpExpiry
-      });
-    }catch(e){}
-  }
-
   /* Send via EmailJS if configured */
   if(window.emailjs && window.LUMEM_EMAILJS_SVC && window.LUMEM_EMAILJS_TPL){
     try{
@@ -11787,16 +12395,13 @@ async function _setFirstTimePassword(email, password){
     users[idx].passwordHash = hash;
     try{ localStorage.setItem('lumem:adm:users', JSON.stringify(users)); _pushAdmUsersToCloud(users); }catch(e){}
   }
-  /* Sign into Firebase */
-  if(_fbAuth){
-    try{ await _fbAuth.createUserWithEmailAndPassword(email, password); }catch(e){
-      try{ await _fbAuth.signInWithEmailAndPassword(email, password); }catch(e2){}
+  /* Sign into Supabase auth */
+  if(window._sb){
+    try{ await window._sb.auth.signInWithPassword({email:email, password:password}); }catch(e){
+      try{ await window._sb.auth.signUp({email:email, password:password}); }catch(e2){}
     }
   }
-  /* Clear OTP from Firebase */
-  if(_fbDb){
-    try{ await _fbDb.ref('studio/otps/' + btoa(email).replace(/=/g,'')).remove(); }catch(e){}
-  }
+  /* OTP cleared — no cloud store needed */
 }
 
 /* ── Show OTP flow screens ── */
@@ -12357,10 +12962,7 @@ window._renderLabelPresets = _renderLabelPresets;
 /* Expose panel function globally */
 window.openTaskPanel = openTaskPanel;
 
-/* ── Auto-PENDENTES interval — live every 15s, runs always in background ── */
-setInterval(function(){
-  if(typeof checkAutoPendentes === 'function') checkAutoPendentes();
-}, 15000);
+/* Auto-PENDENTES: coberto pelo interval de 1s acima — interval de 15s removido (redundante) */
 
 /* ── Close modal on Escape ── */
 document.addEventListener('keydown', e => {
@@ -12399,69 +13001,9 @@ document.addEventListener('keydown', e => {
   });
 })();
 
-/* ── Firebase Config Panel (textarea único) ── */
-(function(){
-  /* Extrai um objeto JSON do texto colado (aceita objeto JS ou JSON puro) */
-  function _parseFbCfgText(text){
-    if(!text) return null;
-    /* Tenta extrair bloco {} da string (suporta "const firebaseConfig = {...}" e JSON puro) */
-    var match = text.match(/\{[\s\S]*\}/);
-    if(!match) return null;
-    try{
-      /* Converte chaves sem aspas para JSON válido */
-      var jsonStr = match[0]
-        .replace(/\/\/.*$/gm, '')           /* remove comentários // */
-        .replace(/,\s*\}/g, '}')            /* remove trailing comma */
-        .replace(/,\s*\]/g, ']')
-        .replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":'); /* chaves sem aspas */
-      return JSON.parse(jsonStr);
-    }catch(e){ return null; }
-  }
-  function _loadFbCfgFields(){
-    try{
-      var saved = JSON.parse(localStorage.getItem('lumem:fbConfig')||'{}');
-      var defaults = {
-        apiKey:'AIzaSyDb1c2pGm27rtZqhoJo07NncHIW087WmbE',
-        authDomain:'lumem-1f6f4.firebaseapp.com',
-        databaseURL:'https://lumem-1f6f4-default-rtdb.firebaseio.com',
-        projectId:'lumem-1f6f4',
-        storageBucket:'lumem-1f6f4.firebasestorage.app',
-        messagingSenderId:'515161772612',
-        appId:'1:515161772612:web:ab093ea161e48db52be211'
-      };
-      var cfg = Object.assign({}, defaults, saved);
-      var ta = document.getElementById('fbCfgJson');
-      if(ta) ta.value = 'const firebaseConfig = ' + JSON.stringify(cfg, null, 2) + ';';
-    }catch(e){}
-  }
-  window._loadFbCfgFields = _loadFbCfgFields;
-  window._saveFbConfig = function(){
-    var ta = document.getElementById('fbCfgJson');
-    var msg = document.getElementById('fbCfgMsg');
-    if(!ta) return;
-    var cfg = _parseFbCfgText(ta.value);
-    if(!cfg || !cfg.apiKey){
-      if(msg){ msg.style.display='block'; msg.style.background='rgba(239,68,68,.15)'; msg.style.color='#EF4444'; msg.textContent='⚠ Código inválido. Cole o objeto firebaseConfig completo.'; }
-      return;
-    }
-    localStorage.setItem('lumem:fbConfig', JSON.stringify(cfg));
-    if(msg){ msg.style.display='block'; msg.style.background='rgba(16,185,129,.15)'; msg.style.color='#10B981'; msg.textContent='✓ Configuração salva! Recarregando...'; }
-    setTimeout(function(){ location.reload(); }, 1200);
-  };
-  /* Pre-fill Firebase config from localStorage on page load */
-  document.addEventListener('DOMContentLoaded', function(){
-    /* Load saved Firebase config if exists */
-    try{
-      var saved = JSON.parse(localStorage.getItem('lumem:fbConfig')||'{}');
-      if(saved.apiKey && window.firebase && !window._fbApp){
-        /* Firebase not yet initialized — init with saved config */
-        window._fbApp = firebase.initializeApp(saved, 'lumemApp_saved');
-        window._fbAuth = window._fbApp.auth();
-        window._fbDb = window._fbApp.database();
-      }
-    }catch(e){}
-  });
-})();
+/* legacy stubs — removed (migrated to Supabase) */
+window._loadFbCfgFields = function(){};
+window._saveFbConfig    = function(){};
 </script>
 
 <!-- Hidden iframe — receives the real login form submit, triggering the browser's "Salvar senha?" popup -->
@@ -12470,41 +13012,8 @@ document.addEventListener('keydown', e => {
   aria-hidden="true" tabindex="-1"></iframe>
 
 <script>
-/* ── Scroll-based time picker ── */
-function _initScrollTimePickers(){
-  document.querySelectorAll('input[type="time"]').forEach(function(inp){
-    if(inp.dataset.scrollReplaced) return;
-    inp.dataset.scrollReplaced = 'true';
-    var val = inp.value || '09:00';
-    var parts = val.split(':'); var h = parseInt(parts[0])||9; var m = parseInt(parts[1])||0;
-    var wrapper = document.createElement('div');
-    wrapper.className = 'scroll-time-picker';
-    wrapper.innerHTML = '<div class="scroll-time-col"><div class="scroll-time-btn" data-role="hUp">▲</div><div class="scroll-time-val" id="sth_'+inp.id+'">'+String(h).padStart(2,'0')+'</div><div class="scroll-time-btn" data-role="hDown">▼</div></div><div style="font-size:20px;font-weight:700;color:var(--text);padding:0 2px;">:</div><div class="scroll-time-col"><div class="scroll-time-btn" data-role="mUp">▲</div><div class="scroll-time-val" id="stm_'+inp.id+'">'+String(m).padStart(2,'0')+'</div><div class="scroll-time-btn" data-role="mDown">▼</div></div>';
-    inp.style.display = 'none';
-    inp.parentNode.insertBefore(wrapper, inp.nextSibling);
-    function update(){ inp.value = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); inp.dispatchEvent(new Event('change')); var hEl=document.getElementById('sth_'+inp.id); var mEl=document.getElementById('stm_'+inp.id); if(hEl) hEl.textContent=String(h).padStart(2,'0'); if(mEl) mEl.textContent=String(m).padStart(2,'0'); }
-    wrapper.addEventListener('click', function(ev){
-      var role = ev.target.dataset && ev.target.dataset.role;
-      if(role==='hUp'){ h=(h+1)%24; update(); }
-      else if(role==='hDown'){ h=(h+23)%24; update(); }
-      else if(role==='mUp'){ m=(m+5)%60; update(); }
-      else if(role==='mDown'){ m=(m+55)%60; update(); }
-    });
-    wrapper.addEventListener('wheel', function(ev){
-      ev.preventDefault();
-      var rect = wrapper.getBoundingClientRect();
-      if(ev.clientX < rect.left + rect.width/2){ h=(h+(ev.deltaY<0?1:-1)+24)%24; }
-      else { m=(m+(ev.deltaY<0?5:-5)+60)%60; }
-      update();
-    }, {passive:false});
-  });
-}
-/* Re-run when modals open */
-document.addEventListener('DOMContentLoaded', function(){
-  _initScrollTimePickers();
-  var obs = new MutationObserver(function(){ _initScrollTimePickers(); });
-  obs.observe(document.body, {childList:true, subtree:true});
-});
+/* Time picker: native input[type="time"] — styled via CSS above */
+/* (scroll roller removed per UX feedback — native picker is cleaner) */
 </script>
 
 <script>
